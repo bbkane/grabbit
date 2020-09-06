@@ -10,6 +10,7 @@ Grab subreddit images!! Heavily inspired by https://github.com/nagracks/reddit_g
   - https://github.com/actions/starter-workflows/blob/main/ci/go.yml
   - https://github.com/actions/cache/blob/main/examples.md#go---modules
   - https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+  - https://github.com/actions/upload-release-asset
 - homebrew to pick it up
   - https://flowerinthenight.com/blog/2019/07/30/homebrew-golang
   - need to create a repo for this

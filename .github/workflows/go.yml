@@ -10,6 +10,8 @@ jobs:
 
   build:
     name: Build
+    # https://docs.github.com/en/github/setting-up-and-managing-billing-and-payments-on-github/about-billing-for-github-actions
+    # linux is the cheapest - even if this is free...
     runs-on: ubuntu-latest
     steps:
 
@@ -35,8 +37,12 @@ jobs:
     - name: Get dependencies
       run: go get -v -t -d ./...
 
-    - name: Build
+    - name: Build for Mac
       run: go build -v .
+      env:
+        CGO_ENABLED: 0
+        GOOS: darwin
+        GOARCH: amd64
 
     - name: Test
       run: go test -v .
