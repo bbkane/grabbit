@@ -1,8 +1,12 @@
 # Grabbit
 
-Grab subreddit images!!
+Grab subreddit images!! Heavily inspired by https://github.com/nagracks/reddit_get_top_images
 
-./grabbit
-    write-config --path [defaults to ...]
-    grab --config-path [defaults to ...]
-    write-schedule --path [defaults to ...] --format [cron|systemctl|mac thingie]
+# TODO
+
+- homebrew integration (github actions?)
+- user agent change (reddit API best practices)
+- better image parsing (go/colly - see nagracks)
+- `write-schedule --path [defaults to ...] --format [cron|systemctl|mac thingie]`
+- rate limiting ( fetchbot? )
+- better logging

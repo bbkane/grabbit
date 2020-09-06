@@ -8,4 +8,5 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/vartanbeno/go-reddit v1.0.1-0.20200905042949-a9e42b21b1bf
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
+	gopkg.in/yaml.v2 v2.3.0
 )
