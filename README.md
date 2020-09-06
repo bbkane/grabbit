@@ -12,6 +12,7 @@ Grab subreddit images!! Heavily inspired by https://github.com/nagracks/reddit_g
   - https://docs.github.com/en/actions/reference/events-that-trigger-workflows
 - homebrew to pick it up
   - https://flowerinthenight.com/blog/2019/07/30/homebrew-golang
+  - need to create a repo for this
 - user agent change (reddit API best practices)
 - better image parsing (go/colly - see nagracks)
 - `write-schedule --path [defaults to ...] --format [cron|systemctl|mac thingie]`
