@@ -30,3 +30,8 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+# # https://goreleaser.com/customization/homebrew/
+# brews:
+#   - tap:
+#       owner: bbkane
+#       name: homebrew-tap
