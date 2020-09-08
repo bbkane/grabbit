@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -34,16 +35,15 @@ type Config struct {
 // try using it to prevent further errors. Notably, it ignores other errors LOL
 func fileExists(fileName string) bool {
 	// https://golangcode.com/check-if-a-file-exists/
-    info, err := os.Stat(fileName)
-    if os.IsNotExist(err) {
-        return false
-    }
-    return !info.IsDir()
+	info, err := os.Stat(fileName)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
 
 func downloadFile(URL string, fileName string, force bool) error {
 	// https://golangbyexample.com/download-image-file-url-golang/
-
 
 	if fileExists(fileName) && force == false {
 		log.Printf("File exists: %v\n", fileName)
@@ -165,26 +165,20 @@ func grab(configPath string) error {
 	return nil
 }
 
-func editConfig(configPath string) error {
+func editFile(path string, defaultContent []byte, rm bool) error {
 
-	configPath, err := homedir.Expand(configPath)
+	// TODO: handle erasing
+
+	path, err := homedir.Expand(path)
 	if err != nil {
 		return err
 	}
 
-	emptyConfigContent := []byte(`version: 1.0.0
-subreddits:
-  - name: earthporn
-    destination: ~/Pictures/grabbit
-    timeframe: "day"
-    limit: 5
-`)
-
 	// TODO: clean up control flow
-	if _, err = os.Stat(configPath); err == nil {
+	if _, err = os.Stat(path); err == nil {
 		// exists, we're good
 	} else if os.IsNotExist(err) {
-		err = ioutil.WriteFile(configPath, emptyConfigContent, 0644)
+		err = ioutil.WriteFile(path, defaultContent, 0644)
 		if err != nil {
 			return err
 		}
@@ -201,9 +195,9 @@ subreddits:
 		return err
 	}
 
-	log.Printf("Executing: %s %s", executable, configPath)
+	log.Printf("Executing: %s %s", executable, path)
 
-	cmd := exec.Command(executable, configPath)
+	cmd := exec.Command(executable, path)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -213,6 +207,67 @@ subreddits:
 	}
 
 	return nil
+
+}
+
+func editConfig(configPath string) error {
+	emptyConfigContent := []byte(`version: 1.0.0
+subreddits:
+  - name: earthporn
+    destination: ~/Pictures/grabbit
+    timeframe: "day"
+    limit: 5
+  - name: cityporn
+    destination: ~/Pictures/grabbit
+    timeframe: "day"
+    limit: 6
+`)
+	return editFile(configPath, emptyConfigContent, false) // TODO: put this in a flag
+}
+
+func editScheduleFile(scheduleFileType string, rm bool) error {
+	defaultContent := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Not sure these are necessary -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin</string>
+	</dict>
+	<key>Label</key>
+	<string>com.bbkane.grabbit</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/grabbit</string>
+		<string>grab</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StartCalendarInterval</key>
+    <!-- Every Monday at 9AM -->
+	<array>
+		<dict>
+			<key>Hour</key>
+			<integer>9</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+			<key>Weekday</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+</dict>
+</plist>
+`)
+	var filePath string
+	switch scheduleFileType {
+	case "launchctl":
+		filePath = "~/Library/LaunchAgents/com.bbkane.grabbit.plist"
+	default:
+		return fmt.Errorf("scheduleFileType not supported: %v\n", scheduleFileType)
+	}
+	return editFile(filePath, defaultContent, rm)
 }
 
 func run() error {
@@ -222,11 +277,15 @@ func run() error {
 	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
 	app.HelpFlag.Short('h')
 
-	editConfigCmd := app.Command("edit-config", "edit or create configuration file. Uses $EDITOR or vim")
+	editConfigCmd := app.Command("edit-config", "Edit or create configuration file. Uses $EDITOR or vim")
 	editConfigCmdConfigPathFlag := editConfigCmd.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
 
 	grabCmd := app.Command("grab", "Grab images. Use `edit-config` first to create a config")
 	grabCmdConfigPathFlag := grabCmd.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
+
+	editScheduleFileCmd := app.Command("edit-schedule-file", "Edit, create, or delete the platform specific way to run this app on a schedule")
+	editScheduleFileCmdTypeFlag := editScheduleFileCmd.Flag("type", "type of schedule file").Required().Enum("cron", "launchctl", "systemd")
+	editScheduleFileCmdRmFlag := editScheduleFileCmd.Flag("rm", "delete the schedule file").Bool()
 
 	// TODO: write cronjob/systemctl commands
 
@@ -236,6 +295,8 @@ func run() error {
 		return editConfig(*editConfigCmdConfigPathFlag)
 	case grabCmd.FullCommand():
 		return grab(*grabCmdConfigPathFlag)
+	case editScheduleFileCmd.FullCommand():
+		return editScheduleFile(*editScheduleFileCmdTypeFlag, *editScheduleFileCmdRmFlag)
 	}
 
 	return nil
