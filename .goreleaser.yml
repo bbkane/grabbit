@@ -13,6 +13,9 @@ builds:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
+      # - i386  # does anyone care about i386?
 archives:
   - replacements:
       darwin: Darwin
@@ -30,8 +33,19 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-# # https://goreleaser.com/customization/homebrew/
-# brews:
-#   - tap:
-#       owner: bbkane
-#       name: homebrew-tap
+# https://goreleaser.com/customization/homebrew/
+brews:
+  - tap:
+      owner: bbkane
+      name: homebrew-tap
+      # Optionally a token can be provided, if it differs from the token provided to GoReleaser
+      token: "{{ .Env.KEY_github_goreleaser_to_homebrew_tap }}"
+      folder: Formula
+      caveats: |
+        Unfortunately, Apple wants to charge developers $100/year to distribute
+        their apps without a big scary "... the developer cannot be verified"
+        warning. I'm not willing to pay that to give away free apps.
+        See https://www.macworld.com/article/3140183/how-to-install-an-app-in-macos-sierra-thats-not-signed-by-a-developer.html to work around that
+      homepage: "https://github.com/bbkane/grabbit"
+      description: "Grab images from subreddits! Useful for getting interesting wallpapers"
+      # TODO: get plist stuff working
