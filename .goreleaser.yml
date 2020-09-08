@@ -39,7 +39,7 @@ brews:
       owner: bbkane
       name: homebrew-tap
       # Optionally a token can be provided, if it differs from the token provided to GoReleaser
-    token: "{{ .Env.KEY_github_goreleaser_to_homebrew_tap }}"
+      token: "{{ .Env.KEY_github_goreleaser_to_homebrew_tap }}"
     folder: Formula
     caveats: |
       Unfortunately, Apple wants to charge developers $100/year to distribute
