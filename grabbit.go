@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -225,50 +224,6 @@ subreddits:
 	return editFile(configPath, emptyConfigContent, false) // TODO: put this in a flag
 }
 
-func editScheduleFile(scheduleFileType string, rm bool) error {
-	defaultContent := []byte(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <!-- Not sure these are necessary -->
-	<key>EnvironmentVariables</key>
-	<dict>
-		<key>PATH</key>
-		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin</string>
-	</dict>
-	<key>Label</key>
-	<string>com.bbkane.grabbit</string>
-	<key>ProgramArguments</key>
-	<array>
-		<string>/usr/local/bin/grabbit</string>
-		<string>grab</string>
-	</array>
-	<key>RunAtLoad</key>
-	<false/>
-	<key>StartCalendarInterval</key>
-    <!-- Every Monday at 9AM -->
-	<array>
-		<dict>
-			<key>Hour</key>
-			<integer>9</integer>
-			<key>Minute</key>
-			<integer>0</integer>
-			<key>Weekday</key>
-			<integer>1</integer>
-		</dict>
-	</array>
-</dict>
-</plist>
-`)
-	var filePath string
-	switch scheduleFileType {
-	case "launchctl":
-		filePath = "~/Library/LaunchAgents/com.bbkane.grabbit.plist"
-	default:
-		return fmt.Errorf("scheduleFileType not supported: %v\n", scheduleFileType)
-	}
-	return editFile(filePath, defaultContent, rm)
-}
 
 func run() error {
 
@@ -283,20 +238,12 @@ func run() error {
 	grabCmd := app.Command("grab", "Grab images. Use `edit-config` first to create a config")
 	grabCmdConfigPathFlag := grabCmd.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
 
-	editScheduleFileCmd := app.Command("edit-schedule-file", "Edit, create, or delete the platform specific way to run this app on a schedule")
-	editScheduleFileCmdTypeFlag := editScheduleFileCmd.Flag("type", "type of schedule file").Required().Enum("cron", "launchctl", "systemd")
-	editScheduleFileCmdRmFlag := editScheduleFileCmd.Flag("rm", "delete the schedule file").Bool()
-
-	// TODO: write cronjob/systemctl commands
-
 	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 	switch cmd {
 	case editConfigCmd.FullCommand():
 		return editConfig(*editConfigCmdConfigPathFlag)
 	case grabCmd.FullCommand():
 		return grab(*grabCmdConfigPathFlag)
-	case editScheduleFileCmd.FullCommand():
-		return editScheduleFile(*editScheduleFileCmdTypeFlag, *editScheduleFileCmdRmFlag)
 	}
 
 	return nil

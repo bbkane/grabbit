@@ -1,7 +1,10 @@
 # Grabbit
 
-Grab subreddit images!! Very useful for getting nice wallpapers automatically. Heavily inspired by
-https://github.com/nagracks/reddit_get_top_images
+Grab subreddit images!! Very useful for getting nice wallpapers automatically.
+
+## @bbkane's Setup
+
+![My Setup](./reddit_wallpapers.jpg)
 
 # Install
 
@@ -15,3 +18,11 @@ brew install bbkane/tap/grabbit
 
 Download from https://github.com/bbkane/grabbit/releases
 
+# Run grabbit on a schedule
+
+See [./schedule_it.md](./schedule_it.md)
+
+# Credits
+
+- library authors - see [./go.mod](./go.mod)
+- [reddit_get_top_images](https://github.com/nagracks/reddit_get_top_images)

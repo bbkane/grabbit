@@ -48,4 +48,43 @@ brews:
       See https://www.macworld.com/article/3140183/how-to-install-an-app-in-macos-sierra-thats-not-signed-by-a-developer.html to work around that
     homepage: "https://github.com/bbkane/grabbit"
     description: "Grab images from subreddits! Useful for getting interesting wallpapers"
-    # TODO: get plist stuff working
+    plist: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+
+          <!-- Not sure these are necessary -->
+        <key>EnvironmentVariables</key>
+        <dict>
+          <key>PATH</key>
+          <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin</string>
+        </dict>
+
+        <key>Label</key>
+        <string>#{plist_name}</string>
+
+        <key>ProgramArguments</key>
+        <array>
+          <string>#{opt_bin}/grabbit</string>
+          <string>grab</string>
+        </array>
+
+        <key>RunAtLoad</key>
+        <true/>
+
+        <key>StartCalendarInterval</key>
+        <array>
+          <dict>
+            <key>Hour</key>
+            <integer>10</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+            <!-- Monday is 1 -->
+            <key>Weekday</key>
+            <integer>1</integer>
+          </dict>
+        </array>
+      </dict>
+
+      </plist>
