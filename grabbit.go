@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
@@ -70,20 +71,6 @@ func downloadFile(URL string, fileName string, force bool) error {
 	return nil
 }
 
-func fileNameFromUrl(fullUrl string) (string, error) {
-	// https://www.golangprograms.com/golang-download-image-from-given-url.html
-	fileUrl, err := url.Parse(fullUrl)
-	if err != nil {
-		return "", err
-	}
-
-	path := fileUrl.Path
-	segments := strings.Split(path, "/")
-
-	fileName := segments[len(segments)-1]
-	return fileName, nil
-}
-
 func getTopPosts(client *reddit.Client, ctx context.Context, subredditName string, postLimit int, timeframe string) ([]*reddit.Post, error) {
 	posts, _, err := client.Subreddit.TopPosts(ctx, subredditName, &reddit.ListPostOptions{
 		ListOptions: reddit.ListOptions{
@@ -95,6 +82,30 @@ func getTopPosts(client *reddit.Client, ctx context.Context, subredditName strin
 		return nil, err
 	}
 	return posts, nil
+}
+
+func genFilePath(destinationDir string, title string, fullUrl string) (string, error) {
+		// https://www.golangprograms.com/golang-download-image-from-given-url.html
+		fileUrl, err := url.Parse(fullUrl)
+		if err != nil {
+			return "", err
+		}
+
+		path := fileUrl.Path
+		segments := strings.Split(path, "/")
+
+		fileName := segments[len(segments)-1]
+
+		if err != nil {
+			return "", err
+		}
+
+		for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
+			title = strings.ReplaceAll(title, s, "_")
+		}
+		fileName = title + "_" + fileName
+		fileName = filepath.Join(destinationDir, fileName)
+		return fileName, nil
 }
 
 func grab(configPath string) error {
@@ -144,14 +155,11 @@ func grab(configPath string) error {
 		for _, post := range posts {
 			if strings.HasSuffix(post.URL, ".jpg") {
 
-				urlFileName, err := fileNameFromUrl(post.URL)
+				filePath, err := genFilePath(subreddit.Destination, post.Title, post.URL)
 				if err != nil {
-					log.Printf("fileNameFromUrl: %v: %v: %v\n", subreddit.Name, post.URL, err)
+					log.Printf("genFilePath: %v: %v: %v\n", subreddit.Name, post.URL, err)
 				}
-				fileName := strings.Replace(post.Title, " ", "_", -1) + "_" + urlFileName
-				fileName = filepath.Join(subreddit.Destination, fileName)
-
-				err = downloadFile(post.URL, fileName, false)
+				err = downloadFile(post.URL, filePath, false)
 				if err != nil {
 					log.Printf("downloadFile: %v: %v: %v\n", subreddit.Name, post.URL, err)
 				}
@@ -187,7 +195,15 @@ func editFile(path string, defaultContent []byte, rm bool) error {
 
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		editor = "vim"
+		if runtime.GOOS == "windows" {
+			editor = "notepad"
+		} else if runtime.GOOS == "darwin" {
+			editor = "open"
+		} else if runtime.GOOS == "linux" {
+			editor = "xdg-open"
+		} else {
+			editor = "vim"
+		}
 	}
 	executable, err := exec.LookPath(editor)
 	if err != nil {
@@ -232,7 +248,7 @@ func run() error {
 	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
 	app.HelpFlag.Short('h')
 
-	editConfigCmd := app.Command("edit-config", "Edit or create configuration file. Uses $EDITOR or vim")
+	editConfigCmd := app.Command("edit-config", "Edit or create configuration file. Uses $EDITOR or the OS's default editor for yaml files")
 	editConfigCmdConfigPathFlag := editConfigCmd.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
 
 	grabCmd := app.Command("grab", "Grab images. Use `edit-config` first to create a config")
