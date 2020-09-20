@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/md5"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,9 +14,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
+	"github.com/natefinch/lumberjack"
 	"github.com/vartanbeno/go-reddit/reddit"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/yaml.v2"
 )
@@ -85,27 +91,27 @@ func getTopPosts(client *reddit.Client, ctx context.Context, subredditName strin
 }
 
 func genFilePath(destinationDir string, title string, fullUrl string) (string, error) {
-		// https://www.golangprograms.com/golang-download-image-from-given-url.html
-		fileUrl, err := url.Parse(fullUrl)
-		if err != nil {
-			return "", err
-		}
+	// https://www.golangprograms.com/golang-download-image-from-given-url.html
+	fileUrl, err := url.Parse(fullUrl)
+	if err != nil {
+		return "", err
+	}
 
-		path := fileUrl.Path
-		segments := strings.Split(path, "/")
+	path := fileUrl.Path
+	segments := strings.Split(path, "/")
 
-		fileName := segments[len(segments)-1]
+	fileName := segments[len(segments)-1]
 
-		if err != nil {
-			return "", err
-		}
+	if err != nil {
+		return "", err
+	}
 
-		for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
-			title = strings.ReplaceAll(title, s, "_")
-		}
-		fileName = title + "_" + fileName
-		fileName = filepath.Join(destinationDir, fileName)
-		return fileName, nil
+	for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
+		title = strings.ReplaceAll(title, s, "_")
+	}
+	fileName = title + "_" + fileName
+	fileName = filepath.Join(destinationDir, fileName)
+	return fileName, nil
 }
 
 func grab(configPath string) error {
@@ -240,26 +246,74 @@ subreddits:
 	return editFile(configPath, emptyConfigContent, false) // TODO: put this in a flag
 }
 
-
 func run() error {
 
-	defaultConfigPath := "~/.config/grabbit.yaml"
+	exePath := os.Args[0]
+	exeBytes, err := ioutil.ReadFile(exePath)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%x", md5.Sum(exeBytes))
 
+	// logger stuff
+	// lumberjack.Logger is already safe for concurrent use, so we don't need to
+	// lock it.
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   "tmp.log",
+		MaxSize:    5, // megabytes
+		MaxBackups: 0,
+		MaxAge:     30, // days
+	}
+	encoderConfig := zapcore.EncoderConfig{
+		// Keys can be anything except the empty string.
+		TimeKey:        "timestamp",
+		LevelKey:       "level",
+		NameKey:        "name", // TODO: what is this?
+		CallerKey:      "caller",
+		FunctionKey:    "function", // zapcore.OmitKey,
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.CapitalLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	writer := zapcore.AddSync(lumberjackLogger)
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		writer,
+		zap.DebugLevel,
+	)
+	logger := zap.New(core, zap.AddCaller())
+	logger = logger.With(zap.Int("pid", os.Getpid()))
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
+	sugar.Infow("failed to fetch URL",
+		// Structured context as loosely typed key-value pairs.
+		"url", "https:/www.linkedin.com",
+		"attempt", 3,
+		"backoff", time.Second,
+	)
+
+	// cli and go!
 	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
 	app.HelpFlag.Short('h')
+	defaultConfigPath := "~/.config/grabbit.yaml"
+	appConfigPathFlag := app.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
 
-	editConfigCmd := app.Command("edit-config", "Edit or create configuration file. Uses $EDITOR or the OS's default editor for yaml files")
-	editConfigCmdConfigPathFlag := editConfigCmd.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
+	editConfigCmd := app.Command("edit-config", "Edit or create configuration file. Uses $EDITOR or vim")
 
 	grabCmd := app.Command("grab", "Grab images. Use `edit-config` first to create a config")
-	grabCmdConfigPathFlag := grabCmd.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
 
 	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 	switch cmd {
 	case editConfigCmd.FullCommand():
-		return editConfig(*editConfigCmdConfigPathFlag)
+		return editConfig(*appConfigPathFlag)
 	case grabCmd.FullCommand():
-		return grab(*grabCmdConfigPathFlag)
+		return grab(*appConfigPathFlag)
 	}
 
 	return nil
