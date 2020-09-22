@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -25,16 +23,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Subreddit struct {
+type subreddit struct {
 	Name        string
 	Destination string
 	Timeframe   string
 	Limit       int
 }
 
-type Config struct {
+type config struct {
 	Version    string
-	Subreddits []Subreddit
+	Subreddits []subreddit
 }
 
 // fileExists checks if a file exists and is not a directory before we
@@ -77,7 +75,7 @@ func downloadFile(URL string, fileName string, force bool) error {
 	return nil
 }
 
-func getTopPosts(client *reddit.Client, ctx context.Context, subredditName string, postLimit int, timeframe string) ([]*reddit.Post, error) {
+func getTopPosts(ctx context.Context, client *reddit.Client, subredditName string, postLimit int, timeframe string) ([]*reddit.Post, error) {
 	posts, _, err := client.Subreddit.TopPosts(ctx, subredditName, &reddit.ListPostOptions{
 		ListOptions: reddit.ListOptions{
 			Limit: postLimit,
@@ -90,14 +88,14 @@ func getTopPosts(client *reddit.Client, ctx context.Context, subredditName strin
 	return posts, nil
 }
 
-func genFilePath(destinationDir string, title string, fullUrl string) (string, error) {
+func genFilePath(destinationDir string, title string, fullURL string) (string, error) {
 	// https://www.golangprograms.com/golang-download-image-from-given-url.html
-	fileUrl, err := url.Parse(fullUrl)
+	fileURL, err := url.Parse(fullURL)
 	if err != nil {
 		return "", err
 	}
 
-	path := fileUrl.Path
+	path := fileURL.Path
 	segments := strings.Split(path, "/")
 
 	fileName := segments[len(segments)-1]
@@ -125,8 +123,8 @@ func grab(configPath string) error {
 		return err
 	}
 
-	config := Config{}
-	err = yaml.UnmarshalStrict(configBytes, &config)
+	userConfig := config{}
+	err = yaml.UnmarshalStrict(configBytes, &userConfig)
 	if err != nil {
 		return err
 	}
@@ -138,7 +136,7 @@ func grab(configPath string) error {
 
 	ctx := context.Background()
 
-	for _, subreddit := range config.Subreddits {
+	for _, subreddit := range userConfig.Subreddits {
 
 		// log.Printf("Processing: %v\n", subreddit.Name)
 
@@ -153,7 +151,7 @@ func grab(configPath string) error {
 		}
 		subreddit.Destination = fullDest
 
-		posts, err := getTopPosts(client, ctx, subreddit.Name, subreddit.Limit, subreddit.Timeframe)
+		posts, err := getTopPosts(ctx, client, subreddit.Name, subreddit.Limit, subreddit.Timeframe)
 		if err != nil {
 			log.Printf("getTopPosts: %v: %v\n", subreddit, err)
 		}
@@ -248,12 +246,12 @@ subreddits:
 
 func run() error {
 
-	exePath := os.Args[0]
-	exeBytes, err := ioutil.ReadFile(exePath)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%x", md5.Sum(exeBytes))
+	// exePath := os.Args[0]
+	// exeBytes, err := ioutil.ReadFile(exePath)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("%x", md5.Sum(exeBytes))
 
 	// logger stuff
 	// lumberjack.Logger is already safe for concurrent use, so we don't need to
