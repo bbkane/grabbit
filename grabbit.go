@@ -278,14 +278,33 @@ func run() error {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	writer := zapcore.AddSync(lumberjackLogger)
-	core := zapcore.NewCore(
+	jsonCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
-		writer,
+		zapcore.AddSync(lumberjackLogger),
 		zap.DebugLevel,
 	)
-	logger := zap.New(core, zap.AddCaller())
-	logger = logger.With(zap.Int("pid", os.Getpid()))
+
+	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
+	stderrCore := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encoderConfig),
+		zapcore.Lock(os.Stderr),
+		zap.DebugLevel,
+	)
+
+	combinedCore := zapcore.NewTee(
+		jsonCore,
+		stderrCore,
+	)
+
+	logger := zap.New(
+		combinedCore,
+		zap.AddCaller(),
+		zap.AddStacktrace(zap.DebugLevel),
+		zap.Fields(zap.Int("pid", os.Getpid())),
+	)
+
+	// logger = logger.With(zap.Int("pid", os.Getpid()))
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
