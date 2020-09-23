@@ -244,24 +244,7 @@ subreddits:
 	return editFile(configPath, emptyConfigContent, false) // TODO: put this in a flag
 }
 
-func run() error {
-
-	// exePath := os.Args[0]
-	// exeBytes, err := ioutil.ReadFile(exePath)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Printf("%x", md5.Sum(exeBytes))
-
-	// logger stuff
-	// lumberjack.Logger is already safe for concurrent use, so we don't need to
-	// lock it.
-	lumberjackLogger := &lumberjack.Logger{
-		Filename:   "tmp.log",
-		MaxSize:    5, // megabytes
-		MaxBackups: 0,
-		MaxAge:     30, // days
-	}
+func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, level zapcore.LevelEnabler) *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
 		TimeKey:        "timestamp",
@@ -277,19 +260,18 @@ func run() error {
 		EncodeDuration: zapcore.StringDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-
 	jsonCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		zapcore.AddSync(lumberjackLogger),
-		zap.DebugLevel,
+		level,
 	)
 
 	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
 	stderrCore := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.Lock(os.Stderr),
-		zap.DebugLevel,
+		zapcore.Lock(fp),
+		level,
 	)
 
 	combinedCore := zapcore.NewTee(
@@ -300,11 +282,28 @@ func run() error {
 	logger := zap.New(
 		combinedCore,
 		zap.AddCaller(),
-		zap.AddStacktrace(zap.DebugLevel),
+		zap.AddStacktrace(level),
 		zap.Fields(zap.Int("pid", os.Getpid())),
 	)
 
-	// logger = logger.With(zap.Int("pid", os.Getpid()))
+	return logger
+
+}
+
+func run() error {
+
+	// logger stuff
+	// lumberjack.Logger is already safe for concurrent use, so we don't need to
+	// lock it.
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   "tmp.log",
+		MaxSize:    5, // megabytes
+		MaxBackups: 0,
+		MaxAge:     30, // days
+	}
+
+	logger := newLogger(lumberjackLogger, os.Stderr, zap.DebugLevel)
+
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
