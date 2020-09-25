@@ -49,7 +49,7 @@ func fileExists(fileName string) bool {
 func downloadFile(URL string, fileName string, force bool) error {
 	// https://golangbyexample.com/download-image-file-url-golang/
 
-	if fileExists(fileName) && force == false {
+	if force == false && fileExists(fileName) {
 		log.Printf("File exists: %v\n", fileName)
 		return nil
 	}
@@ -244,7 +244,8 @@ subreddits:
 	return editFile(configPath, emptyConfigContent, false) // TODO: put this in a flag
 }
 
-func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, level zapcore.LevelEnabler) *zap.Logger {
+// newLogger builds a logger. if lumberjackLogger or fp are nil, then that respective sink won't be made
+func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.LevelEnabler, stackTraceLvl zapcore.LevelEnabler) *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
 		TimeKey:        "timestamp",
@@ -260,34 +261,40 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, level zapcore.L
 		EncodeDuration: zapcore.StringDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-	jsonCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(lumberjackLogger),
-		level,
-	)
 
-	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	coreSlice := make([]zapcore.Core, 0, 2)
 
-	stderrCore := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.Lock(fp),
-		level,
-	)
+	if lumberjackLogger != nil {
+		jsonCore := zapcore.NewCore(
+			zapcore.NewJSONEncoder(encoderConfig),
+			zapcore.AddSync(lumberjackLogger),
+			lvl,
+		)
+		coreSlice = append(coreSlice, jsonCore)
+	}
+
+	if fp != nil {
+		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		fpCore := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(encoderConfig),
+			zapcore.Lock(fp),
+			lvl,
+		)
+		coreSlice = append(coreSlice, fpCore)
+	}
 
 	combinedCore := zapcore.NewTee(
-		jsonCore,
-		stderrCore,
+		coreSlice...,
 	)
 
 	logger := zap.New(
 		combinedCore,
 		zap.AddCaller(),
-		zap.AddStacktrace(level),
+		zap.AddStacktrace(stackTraceLvl),
 		zap.Fields(zap.Int("pid", os.Getpid())),
 	)
 
 	return logger
-
 }
 
 func run() error {
@@ -302,7 +309,15 @@ func run() error {
 		MaxAge:     30, // days
 	}
 
-	logger := newLogger(lumberjackLogger, os.Stderr, zap.DebugLevel)
+	f, err := homedir.Expand(lumberjackLogger.Filename)
+	lumberjackLogger.Filename = f
+
+	if err != nil {
+		// TODO: fix
+		panic(err)
+	}
+
+	logger := newLogger(lumberjackLogger, os.Stderr, zap.DebugLevel, zap.ErrorLevel)
 
 	defer logger.Sync()
 	sugar := logger.Sugar()
@@ -313,6 +328,8 @@ func run() error {
 		"attempt", 3,
 		"backoff", time.Second,
 	)
+
+	return nil
 
 	// cli and go!
 	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
