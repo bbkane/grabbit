@@ -25,6 +25,7 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
+github.com/vartanbeno/go-reddit v1.0.0 h1:Da1209WcszfoulV28EpXN5/oEkX3BzbL+0MyepcimbQ=
 github.com/vartanbeno/go-reddit v1.0.1-0.20200905042949-a9e42b21b1bf h1:llxYigk1hi6xtHM3kOcxP3MI33bKVO5/kZ0aS/5Q9o0=
 github.com/vartanbeno/go-reddit v1.0.1-0.20200905042949-a9e42b21b1bf/go.mod h1:bU3VF4i0/IgYR8KCk+N0sqG/OSPQF/2kyPEonQVxr1o=
 go.uber.org/atomic v1.6.0 h1:Ezj3JGmsOnG1MoRWQkPBsKLe9DwWD9QeXzTRzzldNVk=
