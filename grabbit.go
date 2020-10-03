@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +14,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/natefinch/lumberjack"
 	"github.com/vartanbeno/go-reddit/reddit"
@@ -23,8 +24,6 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/yaml.v2"
 )
-
-var errNotAtTheDisco = errors.New("Don't panic, just os.Exit(1)")
 
 type subreddit struct {
 	Name        string
@@ -35,7 +34,7 @@ type subreddit struct {
 
 type config struct {
 	Version          string
-	LumberjackLogger *lumberjack.Logger
+	LumberjackLogger *lumberjack.Logger `yaml:"lumberjacklogger"`
 	Subreddits       []subreddit
 }
 
@@ -50,28 +49,24 @@ func fileExists(fileName string) bool {
 	return !info.IsDir()
 }
 
-func downloadFile(URL string, fileName string, force bool) error {
+func downloadFile(URL string, fileName string) error {
 	// https://golangbyexample.com/download-image-file-url-golang/
-
-	if force == false && fileExists(fileName) {
-		log.Printf("File exists: %v\n", fileName)
-		return nil
-	}
 
 	response, err := http.Get(URL)
 	if err != nil {
+		return errors.WithStack(err)
 	}
 	defer response.Body.Close()
 
 	file, err := os.Create(fileName)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	defer file.Close()
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -80,17 +75,13 @@ func genFilePath(destinationDir string, title string, fullURL string) (string, e
 	// https://www.golangprograms.com/golang-download-image-from-given-url.html
 	fileURL, err := url.Parse(fullURL)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	path := fileURL.Path
 	segments := strings.Split(path, "/")
 
 	fileName := segments[len(segments)-1]
-
-	if err != nil {
-		return "", err
-	}
 
 	for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
 		title = strings.ReplaceAll(title, s, "_")
@@ -104,13 +95,15 @@ func readConfig(configPath string) (*lumberjack.Logger, []subreddit, error) {
 
 	configBytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		return nil, nil, err
+		// It's ok to not have a config (first run, for example)
+		return nil, nil, errors.WithStack(err)
 	}
 
 	cfg := config{}
 	err = yaml.UnmarshalStrict(configBytes, &cfg)
 	if err != nil {
-		return nil, nil, err
+		// not ok to get invalid YAML
+		log.Panicf("readConfig: yaml decode: %+v\n", errors.WithStack(err))
 	}
 
 	var lumberjackLogger *lumberjack.Logger = nil
@@ -119,21 +112,17 @@ func readConfig(configPath string) (*lumberjack.Logger, []subreddit, error) {
 	if cfg.LumberjackLogger != nil {
 		f, err := homedir.Expand(cfg.LumberjackLogger.Filename)
 		if err != nil {
-			panic(err)
+			log.Panicf("readConfig: expand lumberjack: %+v\n", errors.WithStack(err))
 		}
 		cfg.LumberjackLogger.Filename = f
 		lumberjackLogger = cfg.LumberjackLogger
 	}
 
-	// TODO: figure out memory management here
-	// why do I have to make a new list? Is it because I get a new
-	// copy of subreddit in the for loop and it just disappears each iteration?
-	// subreddits := make([]subreddit)
 	subreddits := make([]subreddit, 0)
 	for _, sr := range cfg.Subreddits {
 		fullDest, err := homedir.Expand(sr.Destination)
 		if err != nil {
-			log.Panicf("Cannot expand subreddit destination %v: %v: %v", sr.Name, sr.Destination, err)
+			log.Panicf("readConfig: Cannot expand subreddit destination %v: %v: %v", sr.Name, sr.Destination, err)
 		}
 		sr.Destination = fullDest
 		subreddits = append(subreddits, sr)
@@ -142,7 +131,7 @@ func readConfig(configPath string) (*lumberjack.Logger, []subreddit, error) {
 	return lumberjackLogger, subreddits, nil
 }
 
-func grab(subreddits []subreddit) error {
+func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 
 	client, err := reddit.NewReadonlyClient()
 	if err != nil {
@@ -163,7 +152,11 @@ func grab(subreddits []subreddit) error {
 			})
 
 		if err != nil {
-			log.Printf("getTopPosts: %v: %v\n", subreddit, err)
+			// not fatal, we can continue with other subreddits
+			sugar.Errorw("Can't use subreddit",
+				"subreddit", subreddit,
+				"err", errors.WithStack(err),
+			)
 		}
 
 		for _, post := range posts {
@@ -171,16 +164,42 @@ func grab(subreddits []subreddit) error {
 
 				filePath, err := genFilePath(subreddit.Destination, post.Title, post.URL)
 				if err != nil {
-					log.Printf("genFilePath: %v: %v: %v\n", subreddit.Name, post.URL, err)
+					sugar.Errorw("genFilePath err",
+						"subreddit", subreddit.Name,
+						"url", post.URL,
+						"err", errors.WithStack(err),
+					)
 				}
-				err = downloadFile(post.URL, filePath, false)
+				if fileExists(filePath) {
+					sugar.Infow(
+						"file exists",
+						"filePath", filePath,
+					)
+					continue
+				}
+				err = downloadFile(post.URL, filePath)
 				if err != nil {
-					log.Printf("downloadFile: %v: %v: %v\n", subreddit.Name, post.URL, err)
+					sugar.Errorw(
+						"downloadFile",
+						"subreddit", subreddit.Name,
+						"url", post.URL,
+						"err", errors.WithStack(err),
+					)
+
 				} else {
-					log.Printf("downloaded file: %v: %v\n", subreddit.Name, post.URL)
+					sugar.Infow(
+						"downloaded file",
+						"subreddit", subreddit.Name,
+						"filePath", filePath,
+						"url", post.URL,
+					)
 				}
 			} else {
-				log.Printf("Could not download: %v: %v\n", subreddit.Name, post.URL)
+				sugar.Errorw(
+					"Could not download",
+					"subreddit", subreddit.Name,
+					"url", post.URL,
+				)
 			}
 		}
 	}
@@ -188,8 +207,14 @@ func grab(subreddits []subreddit) error {
 	return nil
 }
 
-func editConfig(configPath string, editor string) error {
-	emptyConfigContent := []byte(`version: 1.0.0
+func editConfig(sugar *zap.SugaredLogger, configPath string, editor string) error {
+	emptyConfigContent := []byte(`version: 2.0.0
+# make lumberjacklogger nil to not log to file
+lumberjacklogger:
+  filename: ~/.config/grabbit.log
+  maxsize: 5  # megabytes
+  maxbackups: 0
+  maxage: 30  # days
 subreddits:
   - name: earthporn
     destination: ~/Pictures/grabbit
@@ -230,7 +255,11 @@ subreddits:
 		return err
 	}
 
-	log.Printf("Executing: %s %s", executable, configPath)
+	fmt.Printf("Executing: %s %s\n", executable, configPath)
+	sugar.Infow("Executing",
+		"editor", executable,
+		"configPath", configPath,
+	)
 
 	cmd := exec.Command(executable, configPath)
 	cmd.Stdin = os.Stdin
@@ -291,6 +320,7 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 		combinedCore,
 		zap.AddCaller(),
 		zap.AddStacktrace(stackTraceLvl),
+		// TODO: replace with version (goreleaser embeds it)
 		zap.Fields(zap.Int("pid", os.Getpid())),
 	)
 
@@ -298,16 +328,6 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 }
 
 func run() error {
-
-	// logger stuff
-	// lumberjack.Logger is already safe for concurrent use, so we don't need to
-	// lock it.
-	// lumberjackLogger := &lumberjack.Logger{
-	// 	Filename:   "tmp.log",
-	// 	MaxSize:    5, // megabytes
-	// 	MaxBackups: 0,
-	// 	MaxAge:     30, // days
-	// }
 
 	// cli and go!
 	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
@@ -331,7 +351,7 @@ func run() error {
 
 	logger := newLogger(
 		lumberjackLogger,
-		os.Stderr,
+		nil, // TODO: get an os.File from readConfig to put in here - os.Stderr
 		zap.DebugLevel,
 		zap.ErrorLevel,
 	)
@@ -339,19 +359,24 @@ func run() error {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
+	logErrAndReturn := func(err error) error {
+		if err != nil {
+			sugar.Errorw("Error",
+				"err", err,
+			)
+		}
+		return err
+	}
+
 	switch cmd {
 	case editConfigCmd.FullCommand():
-		return editConfig(configPath, *editConfigCmdEditorFlag)
+		return logErrAndReturn(editConfig(sugar, configPath, *editConfigCmdEditorFlag))
 	case grabCmd.FullCommand():
 		if cfgErr != nil {
-			sugar.Errorw(
-				"Config error: maybe try `edit-config`",
-				"err", cfgErr,
-			)
 			fmt.Fprintf(os.Stderr, "Config error: maybe try `edit-config`: %v\n", cfgErr)
-			return errNotAtTheDisco
+			logErrAndReturn(cfgErr)
 		}
-		return grab(subreddits)
+		return logErrAndReturn(grab(sugar, subreddits))
 	}
 
 	return nil
@@ -359,9 +384,7 @@ func run() error {
 
 func main() {
 	err := run()
-	if err == errNotAtTheDisco {
-		// os.Exit(1)
-	} else if err != nil {
+	if err != nil {
 		panic(err)
 	}
 }

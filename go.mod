@@ -7,6 +7,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
+	github.com/pkg/errors v0.9.1
 	github.com/vartanbeno/go-reddit v1.0.1-0.20200905042949-a9e42b21b1bf
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
