@@ -135,12 +135,37 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 
 	client, err := reddit.NewReadonlyClient()
 	if err != nil {
+		err = errors.WithStack(err)
+		logAndPrint(
+			sugar, os.Stderr,
+			"reddit initializion error",
+			"err", err,
+		)
 		return err
 	}
 
 	ctx := context.Background()
 
 	for _, subreddit := range subreddits {
+
+		info, err := os.Stat(subreddit.Destination)
+		if err != nil {
+			logAndPrint(sugar, os.Stderr,
+				"destination error - skipping all posts",
+				"subreddit", subreddit.Name,
+				"directory", subreddit.Destination,
+				"err", errors.WithStack(err),
+			)
+			continue
+		}
+		if !info.IsDir() {
+			logAndPrint(sugar, os.Stderr,
+				"Is not directory - skipping all posts",
+				"subreddit", subreddit.Name,
+				"directory", subreddit.Destination,
+			)
+			continue
+		}
 
 		posts, _, err := client.Subreddit.TopPosts(
 			ctx,
@@ -153,10 +178,12 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 
 		if err != nil {
 			// not fatal, we can continue with other subreddits
-			sugar.Errorw("Can't use subreddit",
+			logAndPrint(sugar, os.Stderr,
+				"Can't use subreddit",
 				"subreddit", subreddit,
 				"err", errors.WithStack(err),
 			)
+			continue
 		}
 
 		for _, post := range posts {
@@ -164,30 +191,32 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 
 				filePath, err := genFilePath(subreddit.Destination, post.Title, post.URL)
 				if err != nil {
-					sugar.Errorw("genFilePath err",
+					logAndPrint(sugar, os.Stderr,
+						"genFilePath err",
 						"subreddit", subreddit.Name,
 						"url", post.URL,
 						"err", errors.WithStack(err),
 					)
+					continue
 				}
 				if fileExists(filePath) {
-					sugar.Infow(
-						"file exists",
+					logAndPrint(sugar, os.Stdout,
+						"file already exists!",
 						"filePath", filePath,
 					)
 					continue
 				}
 				err = downloadFile(post.URL, filePath)
 				if err != nil {
-					sugar.Errorw(
-						"downloadFile",
+					logAndPrint(sugar, os.Stderr,
+						"downloadFile error",
 						"subreddit", subreddit.Name,
 						"url", post.URL,
 						"err", errors.WithStack(err),
 					)
 
 				} else {
-					sugar.Infow(
+					logAndPrint(sugar, os.Stdout,
 						"downloaded file",
 						"subreddit", subreddit.Name,
 						"filePath", filePath,
@@ -195,7 +224,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 					)
 				}
 			} else {
-				sugar.Errorw(
+				logAndPrint(sugar, os.Stderr,
 					"Could not download",
 					"subreddit", subreddit.Name,
 					"url", post.URL,
@@ -230,9 +259,19 @@ subreddits:
 	if os.IsNotExist(err) {
 		err = ioutil.WriteFile(configPath, emptyConfigContent, 0644)
 		if err != nil {
+			logAndPrint(
+				sugar, os.Stderr,
+				"can't write config",
+				"err", err,
+			)
 			return err
 		}
 	} else if err != nil {
+		logAndPrint(
+			sugar, os.Stderr,
+			"can't write config",
+			"err", err,
+		)
 		return err
 	}
 
@@ -252,6 +291,11 @@ subreddits:
 	}
 	executable, err := exec.LookPath(editor)
 	if err != nil {
+		logAndPrint(
+			sugar, os.Stderr,
+			"can't find editor",
+			"err", err,
+		)
 		return err
 	}
 
@@ -267,6 +311,11 @@ subreddits:
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
+		logAndPrint(
+			sugar, os.Stderr,
+			"editor cmd error",
+			"err", err,
+		)
 		return err
 	}
 
@@ -274,7 +323,7 @@ subreddits:
 }
 
 // newLogger builds a logger. if lumberjackLogger or fp are nil, then that respective sink won't be made
-func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.LevelEnabler, stackTraceLvl zapcore.LevelEnabler) *zap.Logger {
+func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.LevelEnabler) *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
 		TimeKey:        "timestamp",
@@ -319,7 +368,8 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 	logger := zap.New(
 		combinedCore,
 		zap.AddCaller(),
-		zap.AddStacktrace(stackTraceLvl),
+		// Using errors package to get better stack traces
+		// zap.AddStacktrace(stackTraceLvl),
 		// TODO: replace with version (goreleaser embeds it)
 		zap.Fields(zap.Int("pid", os.Getpid())),
 	)
@@ -328,12 +378,11 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 }
 
 func run() error {
-
 	// cli and go!
 	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
 	app.HelpFlag.Short('h')
 	defaultConfigPath := "~/.config/grabbit.yaml"
-	appConfigPathFlag := app.Flag("config-path", "config filepath").Short('p').Default(defaultConfigPath).String()
+	appConfigPathFlag := app.Flag("config-path", "config filepath").Short('c').Default(defaultConfigPath).String()
 
 	editConfigCmd := app.Command("edit-config", "Edit or create configuration file. Uses $EDITOR as a fallback")
 	editConfigCmdEditorFlag := editConfigCmd.Flag("editor", "path to editor").Short('e').String()
@@ -344,6 +393,8 @@ func run() error {
 
 	configPath, err := homedir.Expand(*appConfigPathFlag)
 	if err != nil {
+		// to early to log
+		fmt.Fprintf(os.Stderr, "config error: %#v\n", err)
 		panic(err)
 	}
 
@@ -351,35 +402,63 @@ func run() error {
 
 	logger := newLogger(
 		lumberjackLogger,
-		nil, // TODO: get an os.File from readConfig to put in here - os.Stderr
+		// os.Stdout, // TODO: get an os.File from readConfig to put in here - os.Stderr
+		nil,
 		zap.DebugLevel,
-		zap.ErrorLevel,
 	)
 
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
-	logErrAndReturn := func(err error) error {
-		if err != nil {
-			sugar.Errorw("Error",
-				"err", err,
-			)
-		}
-		return err
-	}
-
 	switch cmd {
 	case editConfigCmd.FullCommand():
-		return logErrAndReturn(editConfig(sugar, configPath, *editConfigCmdEditorFlag))
+		return editConfig(sugar, configPath, *editConfigCmdEditorFlag)
 	case grabCmd.FullCommand():
 		if cfgErr != nil {
 			fmt.Fprintf(os.Stderr, "Config error: maybe try `edit-config`: %v\n", cfgErr)
-			logErrAndReturn(cfgErr)
+			return cfgErr
 		}
-		return logErrAndReturn(grab(sugar, subreddits))
+		return grab(sugar, subreddits)
 	}
 
 	return nil
+}
+
+// logAndPrint produces a more human readable error message for the console.
+// It's really only designed for simple keys/value messages It prints Info if
+// fp == os.Stdout, Error if fp == os.Stderr, and panics otherwise.
+func logAndPrint(sugar *zap.SugaredLogger, fp *os.File, msg string, keysAndValues ...interface{}) {
+
+	switch fp {
+	case os.Stdout:
+		sugar.Infow(msg, keysAndValues...)
+		msg = "INFO: " + msg
+	case os.Stderr:
+		sugar.Errorw(msg, keysAndValues...)
+		msg = "ERROR: " + msg
+	default:
+		log.Panicf("logAndPrint: fp not os.Stderr or os.Stdout: %#v\n", fp)
+	}
+
+	length := len(keysAndValues)
+	if length%2 != 0 {
+		log.Panicf("printMsgKeysAndValues: len() not even: %#v\n", keysAndValues...)
+	}
+
+	keys := make([]string, length/2)
+	values := make([]interface{}, length/2)
+	for i := 0; i < length/2; i++ {
+		keys[i] = keysAndValues[i*2].(string)
+		values[i] = keysAndValues[i*2+1]
+	}
+
+	fmtStr := msg + "\n"
+	for i := 0; i < length/2; i++ {
+		fmtStr += ("  " + keys[i] + ": %#v\n")
+	}
+
+	fmtStr += "\n"
+	fmt.Fprintf(fp, fmtStr, values...)
 }
 
 func main() {
