@@ -24,17 +24,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Version will be overwritten at build time
-var Version = "devVersion"
-
-// Commit will be overwritten at build time
-var Commit = "devCommit"
-
-// Date will be overwritten at build time
-var Date = "devDate"
-
-// BuiltBy will be overwritten at build time
-var BuiltBy = "devBuiltBy"
+// These will be overwritten by goreleaser
+var version = "devVersion"
+var commit = "devCommit"
+var date = "devDate"
+var builtBy = "devBuiltBy"
 
 type subreddit struct {
 	Name        string
@@ -402,10 +396,10 @@ func run() error {
 		logAndPrint(
 			sugar, os.Stdout,
 			"Version and build information",
-			"BuiltBy", BuiltBy,
-			"Commit", Commit,
-			"Date", Date,
-			"Version", Version,
+			"builtBy", builtBy,
+			"commit", commit,
+			"date", date,
+			"version", version,
 		)
 	}
 
