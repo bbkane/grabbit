@@ -16,6 +16,8 @@ builds:
     goarch:
       - amd64
       # - i386  # does anyone care about i386?
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
 archives:
   - replacements:
       darwin: Darwin
@@ -24,15 +26,15 @@ archives:
       386: i386
       amd64: x86_64
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
+      - "^docs:"
+      - "^test:"
 # https://goreleaser.com/customization/homebrew/
 brews:
   - tap:

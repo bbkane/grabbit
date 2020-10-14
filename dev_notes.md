@@ -17,7 +17,4 @@ git push origin v0.1
   - https://github.com/koekeishiya/homebrew-formulae/blob/master/yabai.rb
 - user agent change (reddit API best practices)
 - better image parsing (go/colly - see nagracks)
-- `write-schedule --path [defaults to ...] --format [cron|systemctl|mac thingie]`
-  - Lingon (in Downloads)
 - rate limiting ( fetchbot? )
-- better logging
