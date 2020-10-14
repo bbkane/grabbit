@@ -52,8 +52,8 @@ func logAndPrint(sugar *zap.SugaredLogger, fp *os.File, msg string, keysAndValue
 	fmt.Fprintf(fp, fmtStr, values...)
 }
 
-// newLogger builds a logger. if lumberjackLogger or fp are nil, then that respective sink won't be made
-func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.LevelEnabler) *zap.Logger {
+// newLogger builds a logger. If lumberjackLogger or fp are nil, then that respective sink won't be made
+func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.LevelEnabler, appVersion string) *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
 		TimeKey:        "timestamp",
@@ -101,7 +101,10 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 		// Using errors package to get better stack traces
 		// zap.AddStacktrace(stackTraceLvl),
 		// TODO: replace with version (goreleaser embeds it)
-		zap.Fields(zap.Int("pid", os.Getpid())),
+		zap.Fields(
+			zap.Int("pid", os.Getpid()),
+			zap.String("version", appVersion),
+		),
 	)
 
 	return logger

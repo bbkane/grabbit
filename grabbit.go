@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,10 +13,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/mitchellh/go-homedir"
 	"github.com/natefinch/lumberjack"
+	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/reddit"
 	"go.uber.org/zap"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -76,7 +74,7 @@ func downloadFile(URL string, fileName string) error {
 	return nil
 }
 
-func genFilePath(destinationDir string, title string, fullURL string) (string, error) {
+func genFilePath(destinationDir string, subreddit string, title string, fullURL string) (string, error) {
 	// https://www.golangprograms.com/golang-download-image-from-given-url.html
 	fileURL, err := url.Parse(fullURL)
 	if err != nil {
@@ -90,19 +88,20 @@ func genFilePath(destinationDir string, title string, fullURL string) (string, e
 
 	for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
 		title = strings.ReplaceAll(title, s, "_")
+		subreddit = strings.ReplaceAll(subreddit, s, "_")
 	}
-	fileName = title + "_" + fileName
+	fileName = subreddit + "_" + title + "_" + fileName
 	fileName = filepath.Join(destinationDir, fileName)
 	return fileName, nil
 }
 
-func readConfig(configBytes []byte) (*lumberjack.Logger, []subreddit) {
+func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 
 	cfg := config{}
 	err := yaml.UnmarshalStrict(configBytes, &cfg)
 	if err != nil {
 		// not ok to get invalid YAML
-		log.Panicf("readConfig: yaml decode: %+v\n", errors.WithStack(err))
+		return nil, []subreddit{}, errors.WithStack(err)
 	}
 
 	var lumberjackLogger *lumberjack.Logger = nil
@@ -111,7 +110,7 @@ func readConfig(configBytes []byte) (*lumberjack.Logger, []subreddit) {
 	if cfg.LumberjackLogger != nil {
 		f, err := homedir.Expand(cfg.LumberjackLogger.Filename)
 		if err != nil {
-			log.Panicf("readConfig: expand lumberjack: %+v\n", errors.WithStack(err))
+			return nil, []subreddit{}, errors.WithStack(err)
 		}
 		cfg.LumberjackLogger.Filename = f
 		lumberjackLogger = cfg.LumberjackLogger
@@ -121,13 +120,22 @@ func readConfig(configBytes []byte) (*lumberjack.Logger, []subreddit) {
 	for _, sr := range cfg.Subreddits {
 		fullDest, err := homedir.Expand(sr.Destination)
 		if err != nil {
-			log.Panicf("readConfig: Cannot expand subreddit destination %v: %v: %v", sr.Name, sr.Destination, err)
+			return nil, []subreddit{}, errors.WithStack(err)
 		}
 		sr.Destination = fullDest
+		info, err := os.Stat(sr.Destination)
+		if err != nil {
+			return nil, []subreddit{}, errors.WithStack(err)
+
+		}
+		if !info.IsDir() {
+			return nil, []subreddit{}, errors.Errorf("not a directory: %#v\n", sr.Destination)
+		}
+
 		subreddits = append(subreddits, sr)
 	}
 
-	return lumberjackLogger, subreddits
+	return lumberjackLogger, subreddits, nil
 }
 
 func isImage(URL string) error {
@@ -153,26 +161,6 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 	ctx := context.Background()
 
 	for _, subreddit := range subreddits {
-
-		info, err := os.Stat(subreddit.Destination)
-		// NOTE: should I move these checks to config parsing time?
-		if err != nil {
-			logAndPrint(sugar, os.Stderr,
-				"destination error - skipping all posts",
-				"subreddit", subreddit.Name,
-				"directory", subreddit.Destination,
-				"err", errors.WithStack(err),
-			)
-			continue
-		}
-		if !info.IsDir() {
-			logAndPrint(sugar, os.Stderr,
-				"Is not directory - skipping all posts",
-				"subreddit", subreddit.Name,
-				"directory", subreddit.Destination,
-			)
-			continue
-		}
 
 		posts, _, err := client.Subreddit.TopPosts(
 			ctx,
@@ -205,7 +193,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 				continue
 			}
 
-			filePath, err := genFilePath(subreddit.Destination, post.Title, post.URL)
+			filePath, err := genFilePath(subreddit.Destination, subreddit.Name, post.Title, post.URL)
 			if err != nil {
 				logAndPrint(sugar, os.Stderr,
 					"genFilePath err",
@@ -268,11 +256,6 @@ subreddits:
 	_, err := os.Stat(configPath)
 	if os.IsNotExist(err) {
 		err = ioutil.WriteFile(configPath, emptyConfigContent, 0644)
-		logAndPrint(
-			sugar, os.Stdout,
-			"wrote default config",
-			"configPath", configPath,
-		)
 		if err != nil {
 			logAndPrint(
 				sugar, os.Stderr,
@@ -281,6 +264,11 @@ subreddits:
 			)
 			return err
 		}
+		logAndPrint(
+			sugar, os.Stdout,
+			"wrote default config",
+			"configPath", configPath,
+		)
 	} else if err != nil {
 		logAndPrint(
 			sugar, os.Stderr,
@@ -316,7 +304,7 @@ subreddits:
 
 	logAndPrint(
 		sugar, os.Stdout,
-		"Opening editor",
+		"Opening config",
 		"editor", executable,
 		"configPath", configPath,
 	)
@@ -362,34 +350,42 @@ func run() error {
 		panic(err)
 	}
 
-	configBytes, cfgErr := ioutil.ReadFile(configPath)
+	// This is expected to fail on first run
+	configBytes, cfgLoadErr := ioutil.ReadFile(configPath)
 
-	// if configBytes == []byte{}, then this will be
-	// defaulted to nothing and the logging won't work
-	// Stuff will still be printed out with logAndPrint though
-	lumberjackLogger, subreddits := readConfig(configBytes)
+	lumberjackLogger, subreddits, cfgParseErr := parseConfig(configBytes)
 
 	logger := newLogger(
 		lumberjackLogger,
 		nil,
 		zap.DebugLevel,
+		version,
 	)
 
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
+	if cfgParseErr != nil {
+		logAndPrint(
+			sugar, os.Stderr,
+			"Can't parse config",
+			"err", cfgParseErr,
+		)
+		return cfgParseErr
+	}
+
 	switch cmd {
 	case editConfigCmd.FullCommand():
 		return editConfig(sugar, configPath, *editConfigCmdEditorFlag)
 	case grabCmd.FullCommand():
-		if cfgErr != nil {
+		if cfgLoadErr != nil {
 			logAndPrint(
 				sugar, os.Stderr,
 				"Config error - try `edit-config`",
-				"cfgErr", cfgErr,
-				"cfgErrMsg", cfgErr.Error(),
+				"cfgLoadErr", cfgLoadErr,
+				"cfgLoadErrMsg", cfgLoadErr.Error(),
 			)
-			return cfgErr
+			return cfgLoadErr
 		}
 		return grab(sugar, subreddits)
 	case versionCmd.FullCommand():
