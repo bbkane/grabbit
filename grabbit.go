@@ -41,31 +41,21 @@ type config struct {
 	Subreddits       []subreddit
 }
 
-// fileExists checks if a file exists and is not a directory before we
-// try using it to prevent further errors. Notably, it ignores other errors LOL
-func fileExists(fileName string) bool {
-	// https://golangcode.com/check-if-a-file-exists/
-	info, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
+// downloadFile does not overwrite existing files
 func downloadFile(URL string, fileName string) error {
-	// https://golangbyexample.com/download-image-file-url-golang/
+
+	// O_EXCL - used with O_CREATE, file must not exist
+	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer file.Close()
 
 	response, err := http.Get(URL)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	defer response.Body.Close()
-
-	file, err := os.Create(fileName)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer file.Close()
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
@@ -75,7 +65,6 @@ func downloadFile(URL string, fileName string) error {
 }
 
 func genFilePath(destinationDir string, subreddit string, title string, fullURL string) (string, error) {
-	// https://www.golangprograms.com/golang-download-image-from-given-url.html
 	fileURL, err := url.Parse(fullURL)
 	if err != nil {
 		return "", errors.WithStack(err)
@@ -84,15 +73,28 @@ func genFilePath(destinationDir string, subreddit string, title string, fullURL 
 	path := fileURL.Path
 	segments := strings.Split(path, "/")
 
-	fileName := segments[len(segments)-1]
+	urlFileName := segments[len(segments)-1]
 
 	for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
 		title = strings.ReplaceAll(title, s, "_")
 		subreddit = strings.ReplaceAll(subreddit, s, "_")
 	}
-	fileName = subreddit + "_" + title + "_" + fileName
-	fileName = filepath.Join(destinationDir, fileName)
-	return fileName, nil
+	fullFileName := subreddit + "_" + title + "_" + urlFileName
+	filePath := filepath.Join(destinationDir, fullFileName)
+
+	// remove chars from title if it's too long for the OS to handle
+	const MAX_PATH = 250
+	if len(filePath) > MAX_PATH {
+		toChop := len(filePath) - MAX_PATH
+		if toChop > len(title) {
+			return "", errors.Errorf("filePath to long and title too short: %#v\n", filePath)
+		}
+
+		title = title[:len(title)-toChop]
+		fullFileName = subreddit + "_" + title + "_" + urlFileName
+		filePath = filepath.Join(destinationDir, fullFileName)
+	}
+	return filePath, nil
 }
 
 func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
@@ -203,21 +205,23 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 				)
 				continue
 			}
-			if fileExists(filePath) {
-				logAndPrint(sugar, os.Stdout,
-					"file already exists!",
-					"filePath", filePath,
-				)
-				continue
-			}
 			err = downloadFile(post.URL, filePath)
 			if err != nil {
-				logAndPrint(sugar, os.Stderr,
-					"downloadFile error",
-					"subreddit", subreddit.Name,
-					"url", post.URL,
-					"err", errors.WithStack(err),
-				)
+				if os.IsExist(errors.Cause(err)) {
+					logAndPrint(sugar, os.Stdout,
+						"file exists!",
+						"subreddit", subreddit.Name,
+						"filePath", filePath,
+						"url", post.URL,
+					)
+				} else {
+					logAndPrint(sugar, os.Stderr,
+						"downloadFile error",
+						"subreddit", subreddit.Name,
+						"url", post.URL,
+						"err", errors.WithStack(err),
+					)
+				}
 				continue
 
 			}

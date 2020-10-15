@@ -14,12 +14,16 @@ import (
 // fp == os.Stdout, Error if fp == os.Stderr, and panics otherwise.
 func logAndPrint(sugar *zap.SugaredLogger, fp *os.File, msg string, keysAndValues ...interface{}) {
 
+	// adjust stack frame to see caller of logAndPrint in the log
+	// NOTE: could cache this somehow - make it an arg?
+	callerSugar := sugar.Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar()
+
 	switch fp {
 	case os.Stdout:
-		sugar.Infow(msg, keysAndValues...)
+		callerSugar.Infow(msg, keysAndValues...)
 		msg = "INFO: " + msg
 	case os.Stderr:
-		sugar.Errorw(msg, keysAndValues...)
+		callerSugar.Errorw(msg, keysAndValues...)
 		msg = "ERROR: " + msg
 	default:
 		sugar.Panicw(
