@@ -369,6 +369,8 @@ func run() error {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
+	defer logOnPanic(sugar)
+
 	if cfgParseErr != nil {
 		logAndPrint(
 			sugar, os.Stderr,

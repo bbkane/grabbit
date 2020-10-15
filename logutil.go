@@ -113,3 +113,18 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 
 	return logger
 }
+
+func logOnPanic(sugar *zap.SugaredLogger) {
+	stackTraceSugar := sugar.
+		Desugar().
+		WithOptions(
+			zap.AddStacktrace(zap.PanicLevel),
+		).
+		Sugar()
+	if err := recover(); err != nil {
+		stackTraceSugar.Panicw(
+			"panic found!",
+			"err", err,
+		)
+	}
+}
