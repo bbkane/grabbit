@@ -122,19 +122,19 @@ func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 	for _, sr := range cfg.Subreddits {
 		fullDest, err := homedir.Expand(sr.Destination)
 		if err != nil {
-			return nil, []subreddit{}, errors.WithStack(err)
+			return lumberjackLogger, []subreddit{}, errors.WithStack(err)
 		}
 		sr.Destination = fullDest
 		info, err := os.Stat(sr.Destination)
 		if os.IsNotExist(err) {
-			return nil, []subreddit{}, errors.Wrapf(err, "Directory in config does not exist: %v\n", sr.Destination)
+			return lumberjackLogger, []subreddit{}, errors.Wrapf(err, "Directory in config does not exist: %v\n", sr.Destination)
 		}
 		if err != nil {
-			return nil, []subreddit{}, errors.Wrapf(err, "Directory in config error: %v\n", sr.Destination)
+			return lumberjackLogger, []subreddit{}, errors.Wrapf(err, "Directory in config error: %v\n", sr.Destination)
 
 		}
 		if !info.IsDir() {
-			return nil, []subreddit{}, errors.Errorf("Directory in config is not a directory: %#v\n", sr.Destination)
+			return lumberjackLogger, []subreddit{}, errors.Errorf("Directory in config is a file, not a directory: %#v\n", sr.Destination)
 		}
 
 		subreddits = append(subreddits, sr)
