@@ -126,12 +126,15 @@ func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 		}
 		sr.Destination = fullDest
 		info, err := os.Stat(sr.Destination)
+		if os.IsNotExist(err) {
+			return nil, []subreddit{}, errors.Wrapf(err, "Directory in config does not exist: %v\n", sr.Destination)
+		}
 		if err != nil {
-			return nil, []subreddit{}, errors.Wrapf(err, "Directory error: %v\n", sr.Destination)
+			return nil, []subreddit{}, errors.Wrapf(err, "Directory in config error: %v\n", sr.Destination)
 
 		}
 		if !info.IsDir() {
-			return nil, []subreddit{}, errors.Errorf("not a directory: %#v\n", sr.Destination)
+			return nil, []subreddit{}, errors.Errorf("Directory in config is not a directory: %#v\n", sr.Destination)
 		}
 
 		subreddits = append(subreddits, sr)
@@ -374,7 +377,7 @@ func run() error {
 	if cfgParseErr != nil {
 		logAndPrint(
 			sugar, os.Stderr,
-			"Can't parse config - maybe create the directory?",
+			"Can't parse config",
 			"err", cfgParseErr,
 		)
 		return cfgParseErr
