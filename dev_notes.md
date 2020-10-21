@@ -1,20 +1,26 @@
 # Dev Notes
 
-## Tagging (tags that start with v trigger a release)
+## Run from source
 
 ```
-git tag -a v0.1 -m 'does this build'
-git push origin v0.1
+go run . -c ./test-config.yml --help
+```
+
+## Build locally with [goreleaser](https://goreleaser.com/)
+
+This is useful for testing [./.goreleaser.yml](./.goreleaser.yml).
+
+```
+goreleaser --snapshot --skip-publish --rm-dist
+```
+
+## Tagging (tags that start with v trigger a release when pushed)
+
+```
+./tag_it.sh v0.1 -m 'does this build'
 ```
 
 # TODO
 
-- github actions + homebrew
-  - https://medium.com/better-programming/indie-mac-app-devops-with-github-actions-b16764a3ebe7
-  - https://flowerinthenight.com/blog/2019/07/30/homebrew-golang
-  - https://github.com/goreleaser/goreleaser - do this first!
-  - https://github.com/mitchellh/gon#usage-with-goreleaser
-  - https://github.com/koekeishiya/homebrew-formulae/blob/master/yabai.rb
-- user agent change (reddit API best practices)
 - better image parsing (go/colly - see nagracks)
-- rate limiting ( fetchbot? )
+

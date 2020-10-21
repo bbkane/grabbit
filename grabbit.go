@@ -127,7 +127,7 @@ func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 		sr.Destination = fullDest
 		info, err := os.Stat(sr.Destination)
 		if err != nil {
-			return nil, []subreddit{}, errors.WithStack(err)
+			return nil, []subreddit{}, errors.Wrapf(err, "Directory error: %v\n", sr.Destination)
 
 		}
 		if !info.IsDir() {
@@ -148,8 +148,8 @@ func isImage(URL string) error {
 }
 
 func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
-
-	client, err := reddit.NewReadonlyClient()
+	ua := runtime.GOOS + ":" + "grabbit" + ":" + version + " (github.com/bbkane/grabbit)"
+	client, err := reddit.NewReadonlyClient(reddit.WithUserAgent(ua))
 	if err != nil {
 		err = errors.WithStack(err)
 		logAndPrint(
@@ -374,7 +374,7 @@ func run() error {
 	if cfgParseErr != nil {
 		logAndPrint(
 			sugar, os.Stderr,
-			"Can't parse config",
+			"Can't parse config - maybe create the directory?",
 			"err", cfgParseErr,
 		)
 		return cfgParseErr
