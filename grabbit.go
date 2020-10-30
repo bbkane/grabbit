@@ -41,14 +41,39 @@ type config struct {
 	Subreddits       []subreddit
 }
 
-// downloadFile does not overwrite existing files
-func downloadFile(URL string, fileName string) error {
+// downloadImage does not overwrite existing files
+func downloadImage(URL string, fileName string) error {
 
+	// TODO: add tests! This is tricksy
+
+	// TODO: use the following process to get the right file extension
+	// We need the file extension to check whether the file exists when we open
+	// it
+	// - try to parse it from the URL
+	// - try a HEAD request from the server
+	// - download 512 bytes from a GET request and check the mime type maybe (or give up :D)
+
+	// putting the file logic first because it's the cheapest
 	// O_EXCL - used with O_CREATE, file must not exist
+
+	// Gonna use os.O_TRUNC now to always create the file for testing
+	// file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	// clean up if necessary
+	// Note that this means I need to always set err
+	// instead of `return errors.New()` directly
+	// TODO: replace this ugliness with a nested function call:
+	// err = helperFunction(...); if err != nil { _ = os.Remove(fileName) }
+	defer func() {
+		if err != nil {
+			_ = os.Remove(fileName)
+		}
+	}()
+
 	defer file.Close()
 
 	response, err := http.Get(URL)
@@ -57,9 +82,31 @@ func downloadFile(URL string, fileName string) error {
 	}
 	defer response.Body.Close()
 
+	// -- get Content-Type
+
+	contentBytes := make([]byte, 512)
+
+	_, err = response.Body.Read(contentBytes)
+	if err != nil {
+		return errors.Wrapf(err, "Could not read contentBytes: %+v\n", URL)
+	}
+
+	// https://golang.org/pkg/net/http/#DetectContentType
+	contentType := http.DetectContentType(contentBytes)
+
+	if !(contentType == "image/jpeg" || contentType == "image/png") {
+		err = errors.Errorf("contentType is not 'image/jpeg' or 'image/png': %+v\n", contentType)
+		return err
+	}
+
+	_, err = file.Write(contentBytes)
+	if err != nil {
+		return errors.Wrapf(err, "can't write contentBytes to file: %+v, %+v\n", URL, file.Name())
+	}
+
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "Can't copy to file: %+v, %+v\n", URL, file.Name())
 	}
 	return nil
 }
@@ -110,6 +157,8 @@ func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 
 	// we can get a valid config with a nil logger
 	if cfg.LumberjackLogger != nil {
+		// Note that if the directories to here don't exist, lumberjack will
+		// make them
 		f, err := homedir.Expand(cfg.LumberjackLogger.Filename)
 		if err != nil {
 			return nil, []subreddit{}, errors.WithStack(err)
@@ -120,27 +169,38 @@ func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 
 	subreddits := make([]subreddit, 0)
 	for _, sr := range cfg.Subreddits {
-		fullDest, err := homedir.Expand(sr.Destination)
-		if err != nil {
-			return lumberjackLogger, []subreddit{}, errors.WithStack(err)
-		}
-		sr.Destination = fullDest
-		info, err := os.Stat(sr.Destination)
-		if os.IsNotExist(err) {
-			return lumberjackLogger, []subreddit{}, errors.Wrapf(err, "Directory in config does not exist: %v\n", sr.Destination)
-		}
+		dirPath, err := validateDirectory(sr.Destination)
 		if err != nil {
 			return lumberjackLogger, []subreddit{}, errors.Wrapf(err, "Directory in config error: %v\n", sr.Destination)
-
 		}
-		if !info.IsDir() {
-			return lumberjackLogger, []subreddit{}, errors.Errorf("Directory in config is a file, not a directory: %#v\n", sr.Destination)
-		}
+		sr.Destination = dirPath
 
 		subreddits = append(subreddits, sr)
 	}
 
 	return lumberjackLogger, subreddits, nil
+}
+
+// validateDirectory expands a directory and checks that it exists
+// it returns the full path to the directory on success
+// validateDirectory("~/foo") -> ("/home/bbkane/foo", nil)
+func validateDirectory(dir string) (string, error) {
+	dirPath, err := homedir.Expand(dir)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	info, err := os.Stat(dirPath)
+	if os.IsNotExist(err) {
+		return "", errors.Wrapf(err, "Directory does not exist: %v\n", dirPath)
+	}
+	if err != nil {
+		return "", errors.Wrapf(err, "Directory error: %v\n", dirPath)
+
+	}
+	if !info.IsDir() {
+		return "", errors.Errorf("Directory is a file, not a directory: %#v\n", dirPath)
+	}
+	return dirPath, nil
 }
 
 func isImage(URL string) error {
@@ -208,7 +268,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 				)
 				continue
 			}
-			err = downloadFile(post.URL, filePath)
+			err = downloadImage(post.URL, filePath)
 			if err != nil {
 				if os.IsExist(errors.Cause(err)) {
 					logAndPrint(sugar, os.Stdout,
