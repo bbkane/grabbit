@@ -111,28 +111,21 @@ func downloadImage(URL string, fileName string) error {
 	return nil
 }
 
-func genFilePath(destinationDir string, subreddit string, title string, fullURL string) (string, error) {
-	fileURL, err := url.Parse(fullURL)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-
-	path := fileURL.Path
-	segments := strings.Split(path, "/")
-
-	urlFileName := segments[len(segments)-1]
+func genFilePath(destinationDir string, subreddit string, title string, urlFileName string) (string, error) {
 
 	for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
-		title = strings.ReplaceAll(title, s, "_")
+		urlFileName = strings.ReplaceAll(urlFileName, s, "_")
 		subreddit = strings.ReplaceAll(subreddit, s, "_")
+		title = strings.ReplaceAll(title, s, "_")
 	}
+
 	fullFileName := subreddit + "_" + title + "_" + urlFileName
 	filePath := filepath.Join(destinationDir, fullFileName)
 
 	// remove chars from title if it's too long for the OS to handle
-	const MAX_PATH = 250
-	if len(filePath) > MAX_PATH {
-		toChop := len(filePath) - MAX_PATH
+	const maxPathLength = 250
+	if len(filePath) > maxPathLength {
+		toChop := len(filePath) - maxPathLength
 		if toChop > len(title) {
 			return "", errors.Errorf("filePath to long and title too short: %#v\n", filePath)
 		}
@@ -203,11 +196,26 @@ func validateDirectory(dir string) (string, error) {
 	return dirPath, nil
 }
 
-func isImage(URL string) error {
-	if strings.HasSuffix(URL, ".jpg") {
-		return nil
+// validateImageURL tries to extract a valid image file name from a URL
+// validateImageURL("https://bob.com/img.jpg?abc") -> nil, "img.jpg"
+func validateImageURL(fullURL string) (string, error) {
+	fileURL, err := url.Parse(fullURL)
+	if err != nil {
+		return "", errors.WithStack(err)
 	}
-	return errors.New("string doesn't end in .jpg")
+
+	path := fileURL.Path
+	segments := strings.Split(path, "/")
+
+	urlFileName := segments[len(segments)-1]
+	allowedImageExtensions := []string{".jpg", ".jpeg", ".png"}
+	for _, suffix := range allowedImageExtensions {
+		if strings.HasSuffix(urlFileName, suffix) {
+			return urlFileName, nil
+		}
+
+	}
+	return "", errors.Errorf("urlFileName doesn't end in allowed extension: %#v , %#v\n ", urlFileName, allowedImageExtensions)
 }
 
 func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
@@ -247,7 +255,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 		}
 
 		for _, post := range posts {
-			err = isImage(post.URL)
+			urlFileName, err := validateImageURL(post.URL)
 			if err != nil {
 				logAndPrint(sugar, os.Stderr,
 					"can't download image",
@@ -258,7 +266,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 				continue
 			}
 
-			filePath, err := genFilePath(subreddit.Destination, subreddit.Name, post.Title, post.URL)
+			filePath, err := genFilePath(subreddit.Destination, subreddit.Name, post.Title, urlFileName)
 			if err != nil {
 				logAndPrint(sugar, os.Stderr,
 					"genFilePath err",
@@ -305,7 +313,7 @@ func editConfig(sugar *zap.SugaredLogger, configPath string, editor string) erro
 	emptyConfigContent := []byte(`version: 2.0.0
 # make lumberjacklogger nil to not log to file
 lumberjacklogger:
-  filename: ~/.config/grabbit.log
+  filename: ~/.config/grabbit.jsonl
   maxsize: 5  # megabytes
   maxbackups: 0
   maxage: 30  # days

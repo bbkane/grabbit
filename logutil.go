@@ -59,14 +59,14 @@ func logAndPrint(sugar *zap.SugaredLogger, fp *os.File, msg string, keysAndValue
 // newLogger builds a logger. If lumberjackLogger or fp are nil, then that respective sink won't be made
 func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.LevelEnabler, appVersion string) *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
-		// Keys can be anything except the empty string.
-		TimeKey:        "timestamp",
-		LevelKey:       "level",
-		NameKey:        "name", // TODO: what is this?
-		CallerKey:      "caller",
-		FunctionKey:    "function", // zapcore.OmitKey,
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
+		// prefix shared keys with '_' so they show up first when keys are alphabetical
+		TimeKey:        "_timestamp",
+		LevelKey:       "_level",
+		NameKey:        "_name", // TODO: what is this?
+		CallerKey:      "_caller",
+		FunctionKey:    "_function", // zapcore.OmitKey,
+		MessageKey:     "_msg",
+		StacktraceKey:  "_stacktrace",
 		LineEnding:     zapcore.DefaultLineEnding,
 		EncodeLevel:    zapcore.CapitalLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
