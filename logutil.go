@@ -74,6 +74,11 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
+	customCommonFields := zap.Fields(
+		zap.Int("_pid", os.Getpid()),
+		zap.String("_version", appVersion),
+	)
+
 	coreSlice := make([]zapcore.Core, 0, 2)
 
 	if lumberjackLogger != nil {
@@ -104,11 +109,7 @@ func newLogger(lumberjackLogger *lumberjack.Logger, fp *os.File, lvl zapcore.Lev
 		zap.AddCaller(),
 		// Using errors package to get better stack traces
 		// zap.AddStacktrace(stackTraceLvl),
-		// TODO: replace with version (goreleaser embeds it)
-		zap.Fields(
-			zap.Int("pid", os.Getpid()),
-			zap.String("version", appVersion),
-		),
+		customCommonFields,
 	)
 
 	return logger
