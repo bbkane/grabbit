@@ -4,6 +4,8 @@ Grab subreddit images!! Very useful for getting nice wallpapers automatically.
 
 ## @bbkane's Setup
 
+See my [personal config](https://github.com/bbkane/dotfiles/blob/master/grabbit/.config/grabbit.yaml).
+
 ![My Setup](./reddit_wallpapers.jpg)
 
 # Install
