@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/bbkane/grabbit/sugarkane"
-	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 // https://blog.golang.org/examples

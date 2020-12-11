@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 // SugarKane is a very opinionated wrapper around a uber/zap sugared logger

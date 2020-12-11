@@ -15,11 +15,11 @@ import (
 
 	"github.com/bbkane/grabbit/sugarkane"
 	"github.com/mitchellh/go-homedir"
-	"github.com/natefinch/lumberjack"
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/reddit"
 	"go.uber.org/zap"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v2"
 )
 
