@@ -76,6 +76,9 @@ func downloadImage(URL string, fileName string) error {
 
 	defer file.Close()
 
+	// err = func() error {
+	// 	return nil
+	// }()
 	response, err := http.Get(URL)
 	if err != nil {
 		return errors.WithStack(err)
@@ -402,10 +405,11 @@ func run() error {
 	defaultConfigPath := "~/.config/grabbit.yaml"
 	appConfigPathFlag := app.Flag("config-path", "config filepath").Short('c').Default(defaultConfigPath).String()
 
-	editConfigCmd := app.Command("edit-config", "Edit or create configuration file. Uses $EDITOR as a fallback")
-	editConfigCmdEditorFlag := editConfigCmd.Flag("editor", "path to editor").Short('e').String()
+	configCmd := app.Command("config", "config commands")
+	configCmdEditCmd := configCmd.Command("edit", "Edit or create configuration file. Uses $EDITOR as a fallback")
+	configCmdEditCmdEditorFlag := configCmdEditCmd.Flag("editor", "path to editor").Short('e').String()
 
-	grabCmd := app.Command("grab", "Grab images. Use `edit-config` first to create a config")
+	grabCmd := app.Command("grab", "Grab images. Use `config edit` first to create a config")
 
 	versionCmd := app.Command("version", "print grabbit build and version information")
 
@@ -421,8 +425,8 @@ func run() error {
 		)
 	}
 
-	if cmd == editConfigCmd.FullCommand() {
-		return editConfig(configPath, *editConfigCmdEditorFlag)
+	if cmd == configCmdEditCmd.FullCommand() {
+		return editConfig(configPath, *configCmdEditCmdEditorFlag)
 	}
 	if cmd == versionCmd.FullCommand() {
 		sugarkane.Printw(os.Stdout,
@@ -440,7 +444,7 @@ func run() error {
 	if cfgLoadErr != nil {
 		if cfgLoadErr != nil {
 			sugarkane.Printw(os.Stderr,
-				"Config error - try `edit-config`",
+				"Config error - try `config edit`",
 				"cfgLoadErr", cfgLoadErr,
 				"cfgLoadErrMsg", cfgLoadErr.Error(),
 			)
@@ -462,6 +466,7 @@ func run() error {
 	defer sk.Sync()
 	sk.LogOnPanic()
 
+	// dispatch commands that use dependencies
 	switch cmd {
 	case grabCmd.FullCommand():
 		return grab(sk, subreddits)
@@ -472,9 +477,8 @@ func run() error {
 			"cmd", cmd,
 			"err", err,
 		)
+		return err
 	}
-
-	return nil
 }
 
 func main() {
