@@ -62,56 +62,47 @@ func downloadImage(URL string, fileName string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	// clean up if necessary
-	// Note that this means I need to always set err
-	// instead of `return errors.New()` directly
-	// TODO: replace this ugliness with a nested function call:
-	// err = helperFunction(...); if err != nil { _ = os.Remove(fileName) }
-	defer func() {
-		if err != nil {
-			_ = os.Remove(fileName)
-		}
-	}()
-
 	defer file.Close()
 
-	// err = func() error {
-	// 	return nil
-	// }()
-	response, err := http.Get(URL)
+	err = func() error {
+		response, err := http.Get(URL)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		defer response.Body.Close()
+
+		// -- make sure Content-Type is an image
+
+		contentBytes := make([]byte, 512)
+
+		_, err = response.Body.Read(contentBytes)
+		if err != nil {
+			return errors.Wrapf(err, "Could not read contentBytes: %+v\n", URL)
+		}
+
+		// https://golang.org/pkg/net/http/#DetectContentType
+		contentType := http.DetectContentType(contentBytes)
+
+		if !(contentType == "image/jpeg" || contentType == "image/png") {
+			err = errors.Errorf("contentType is not 'image/jpeg' or 'image/png': %+v\n", contentType)
+			return err
+		}
+
+		_, err = file.Write(contentBytes)
+		if err != nil {
+			return errors.Wrapf(err, "can't write contentBytes to file: %+v, %+v\n", URL, file.Name())
+		}
+
+		_, err = io.Copy(file, response.Body)
+		if err != nil {
+			return errors.Wrapf(err, "Can't copy to file: %+v, %+v\n", URL, file.Name())
+		}
+		return nil
+	}()
 	if err != nil {
-		return errors.WithStack(err)
+		_ = os.Remove(fileName)
 	}
-	defer response.Body.Close()
-
-	// -- get Content-Type
-
-	contentBytes := make([]byte, 512)
-
-	_, err = response.Body.Read(contentBytes)
-	if err != nil {
-		return errors.Wrapf(err, "Could not read contentBytes: %+v\n", URL)
-	}
-
-	// https://golang.org/pkg/net/http/#DetectContentType
-	contentType := http.DetectContentType(contentBytes)
-
-	if !(contentType == "image/jpeg" || contentType == "image/png") {
-		err = errors.Errorf("contentType is not 'image/jpeg' or 'image/png': %+v\n", contentType)
-		return err
-	}
-
-	_, err = file.Write(contentBytes)
-	if err != nil {
-		return errors.Wrapf(err, "can't write contentBytes to file: %+v, %+v\n", URL, file.Name())
-	}
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		return errors.Wrapf(err, "Can't copy to file: %+v, %+v\n", URL, file.Name())
-	}
-	return nil
+	return err
 }
 
 func genFilePath(destinationDir string, subreddit string, title string, urlFileName string) (string, error) {
