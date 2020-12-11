@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/bbkane/grabbit/sugarkane"
 	"github.com/mitchellh/go-homedir"
 	"github.com/natefinch/lumberjack"
 	"github.com/pkg/errors"
@@ -218,13 +219,12 @@ func validateImageURL(fullURL string) (string, error) {
 	return "", errors.Errorf("urlFileName doesn't end in allowed extension: %#v , %#v\n ", urlFileName, allowedImageExtensions)
 }
 
-func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
+func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 	ua := runtime.GOOS + ":" + "grabbit" + ":" + version + " (github.com/bbkane/grabbit)"
 	client, err := reddit.NewReadonlyClient(reddit.WithUserAgent(ua))
 	if err != nil {
 		err = errors.WithStack(err)
-		logAndPrint(
-			sugar, os.Stderr,
+		sk.Errorw(
 			"reddit initializion error",
 			"err", err,
 		)
@@ -246,7 +246,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 
 		if err != nil {
 			// not fatal, we can continue with other subreddits
-			logAndPrint(sugar, os.Stderr,
+			sk.Errorw(
 				"Can't use subreddit",
 				"subreddit", subreddit,
 				"err", errors.WithStack(err),
@@ -257,7 +257,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 		for _, post := range posts {
 			urlFileName, err := validateImageURL(post.URL)
 			if err != nil {
-				logAndPrint(sugar, os.Stderr,
+				sk.Errorw(
 					"can't download image",
 					"subreddit", subreddit.Name,
 					"url", post.URL,
@@ -268,7 +268,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 
 			filePath, err := genFilePath(subreddit.Destination, subreddit.Name, post.Title, urlFileName)
 			if err != nil {
-				logAndPrint(sugar, os.Stderr,
+				sk.Errorw(
 					"genFilePath err",
 					"subreddit", subreddit.Name,
 					"url", post.URL,
@@ -279,14 +279,14 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 			err = downloadImage(post.URL, filePath)
 			if err != nil {
 				if os.IsExist(errors.Cause(err)) {
-					logAndPrint(sugar, os.Stdout,
+					sk.Infow(
 						"file exists!",
 						"subreddit", subreddit.Name,
 						"filePath", filePath,
 						"url", post.URL,
 					)
 				} else {
-					logAndPrint(sugar, os.Stderr,
+					sk.Errorw(
 						"downloadFile error",
 						"subreddit", subreddit.Name,
 						"url", post.URL,
@@ -296,7 +296,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 				continue
 
 			}
-			logAndPrint(sugar, os.Stdout,
+			sk.Infow(
 				"downloaded file",
 				"subreddit", subreddit.Name,
 				"filePath", filePath,
@@ -307,7 +307,7 @@ func grab(sugar *zap.SugaredLogger, subreddits []subreddit) error {
 	return nil
 }
 
-func editConfig(sugar *zap.SugaredLogger, configPath string, editor string) error {
+func editConfig(configPath string, editor string) error {
 	// TODO: make this a serialized config struct
 	// so I get a compile warning if there's problems
 	emptyConfigContent := []byte(`version: 2.0.0
@@ -332,21 +332,18 @@ subreddits:
 	if os.IsNotExist(err) {
 		err = ioutil.WriteFile(configPath, emptyConfigContent, 0644)
 		if err != nil {
-			logAndPrint(
-				sugar, os.Stderr,
+			sugarkane.Printw(os.Stderr,
 				"can't write config",
 				"err", err,
 			)
 			return err
 		}
-		logAndPrint(
-			sugar, os.Stdout,
+		sugarkane.Printw(os.Stdout,
 			"wrote default config",
 			"configPath", configPath,
 		)
 	} else if err != nil {
-		logAndPrint(
-			sugar, os.Stderr,
+		sugarkane.Printw(os.Stderr,
 			"can't write config",
 			"err", err,
 		)
@@ -369,16 +366,14 @@ subreddits:
 	}
 	executable, err := exec.LookPath(editor)
 	if err != nil {
-		logAndPrint(
-			sugar, os.Stderr,
+		sugarkane.Printw(os.Stderr,
 			"can't find editor",
 			"err", err,
 		)
 		return err
 	}
 
-	logAndPrint(
-		sugar, os.Stdout,
+	sugarkane.Printw(os.Stderr,
 		"Opening config",
 		"editor", executable,
 		"configPath", configPath,
@@ -390,8 +385,7 @@ subreddits:
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		logAndPrint(
-			sugar, os.Stderr,
+		sugarkane.Printw(os.Stderr,
 			"editor cmd error",
 			"err", err,
 		)
@@ -430,21 +424,12 @@ func run() error {
 
 	lumberjackLogger, subreddits, cfgParseErr := parseConfig(configBytes)
 
-	logger := newLogger(
-		lumberjackLogger,
-		nil,
-		zap.DebugLevel,
-		version,
-	)
-
-	defer logger.Sync()
-	sugar := logger.Sugar()
-
-	defer logOnPanic(sugar)
+	sk := sugarkane.NewSugarKane(lumberjackLogger, os.Stderr, os.Stdout, zap.DebugLevel, version)
+	defer sk.Sync()
+	sk.LogOnPanic()
 
 	if cfgParseErr != nil {
-		logAndPrint(
-			sugar, os.Stderr,
+		sk.Errorw(
 			"Can't parse config",
 			"err", cfgParseErr,
 		)
@@ -453,21 +438,19 @@ func run() error {
 
 	switch cmd {
 	case editConfigCmd.FullCommand():
-		return editConfig(sugar, configPath, *editConfigCmdEditorFlag)
+		return editConfig(configPath, *editConfigCmdEditorFlag)
 	case grabCmd.FullCommand():
 		if cfgLoadErr != nil {
-			logAndPrint(
-				sugar, os.Stderr,
+			sk.Errorw(
 				"Config error - try `edit-config`",
 				"cfgLoadErr", cfgLoadErr,
 				"cfgLoadErrMsg", cfgLoadErr.Error(),
 			)
 			return cfgLoadErr
 		}
-		return grab(sugar, subreddits)
+		return grab(sk, subreddits)
 	case versionCmd.FullCommand():
-		logAndPrint(
-			sugar, os.Stdout,
+		sk.Infow(
 			"Version and build information",
 			"builtBy", builtBy,
 			"commit", commit,
