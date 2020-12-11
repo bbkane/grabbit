@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -397,7 +396,7 @@ subreddits:
 
 func run() error {
 
-	// cli and go!
+	// parse the CLI args
 	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
 	app.HelpFlag.Short('h')
 	defaultConfigPath := "~/.config/grabbit.yaml"
@@ -412,50 +411,66 @@ func run() error {
 
 	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
+	// work with commands that don't have dependencies (version, editConfig)
 	configPath, err := homedir.Expand(*appConfigPathFlag)
 	if err != nil {
-		// to early to log
-		fmt.Fprintf(os.Stderr, "config error: %#v\n", err)
-		panic(err)
-	}
-
-	// This is expected to fail on first run
-	configBytes, cfgLoadErr := ioutil.ReadFile(configPath)
-
-	lumberjackLogger, subreddits, cfgParseErr := parseConfig(configBytes)
-
-	sk := sugarkane.NewSugarKane(lumberjackLogger, os.Stderr, os.Stdout, zap.DebugLevel, version)
-	defer sk.Sync()
-	sk.LogOnPanic()
-
-	if cfgParseErr != nil {
-		sk.Errorw(
-			"Can't parse config",
-			"err", cfgParseErr,
+		err = errors.WithStack(err)
+		sugarkane.Printw(os.Stderr,
+			"config error",
+			"err", err,
 		)
-		return cfgParseErr
 	}
 
-	switch cmd {
-	case editConfigCmd.FullCommand():
+	if cmd == editConfigCmd.FullCommand() {
 		return editConfig(configPath, *editConfigCmdEditorFlag)
-	case grabCmd.FullCommand():
+	}
+	if cmd == versionCmd.FullCommand() {
+		sugarkane.Printw(os.Stdout,
+			"Version and build information",
+			"builtBy", builtBy,
+			"commit", commit,
+			"date", date,
+			"version", version,
+		)
+		return nil
+	}
+
+	// get a config
+	configBytes, cfgLoadErr := ioutil.ReadFile(configPath)
+	if cfgLoadErr != nil {
 		if cfgLoadErr != nil {
-			sk.Errorw(
+			sugarkane.Printw(os.Stderr,
 				"Config error - try `edit-config`",
 				"cfgLoadErr", cfgLoadErr,
 				"cfgLoadErrMsg", cfgLoadErr.Error(),
 			)
 			return cfgLoadErr
 		}
+	}
+
+	lumberjackLogger, subreddits, cfgParseErr := parseConfig(configBytes)
+	if cfgParseErr != nil {
+		sugarkane.Printw(os.Stderr,
+			"Can't parse config",
+			"err", cfgParseErr,
+		)
+		return cfgParseErr
+	}
+
+	// get a logger
+	sk := sugarkane.NewSugarKane(lumberjackLogger, os.Stderr, os.Stdout, zap.DebugLevel, version)
+	defer sk.Sync()
+	sk.LogOnPanic()
+
+	switch cmd {
+	case grabCmd.FullCommand():
 		return grab(sk, subreddits)
-	case versionCmd.FullCommand():
-		sk.Infow(
-			"Version and build information",
-			"builtBy", builtBy,
-			"commit", commit,
-			"date", date,
-			"version", version,
+	default:
+		err = errors.Errorf("Unknown command: %#v\n", cmd)
+		sk.Errorw(
+			"Unknown command",
+			"cmd", cmd,
+			"err", err,
 		)
 	}
 
