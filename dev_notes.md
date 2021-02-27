@@ -16,8 +16,10 @@ goreleaser --snapshot --skip-publish --rm-dist
 
 ## Tagging (tags that start with v trigger a release when pushed)
 
+See [tag_it.sh](https://github.com/bbkane/dotfiles/blob/master/bin_common/bin_common/tag_it.sh)
+
 ```
-./tag_it.sh v0.1 -m 'does this build'
+tag_it.sh v0.1 -m 'does this build'
 ```
 
 ## Analyzing logs (useful for image URL detection improvement)
@@ -29,4 +31,3 @@ cat ~/.config/grabbit.log | jsonl_to.py -f csv > ~/tmp.csv
 # TODO
 
 - better image parsing (go/colly - see nagracks)
-

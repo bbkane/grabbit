@@ -44,3 +44,9 @@ See the following links to read up `crond` or generate entries:
 
 - https://crontab-generator.org/
 - https://www.hostinger.com/tutorials/cron-job
+
+## Windows
+
+I don't regularly use Windows so I can't really help here. If you have a nice
+way to schedule grabbit on Windows, I'd appreciate a Pull Request updating this
+section
