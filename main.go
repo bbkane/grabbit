@@ -14,7 +14,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
-	"github.com/vartanbeno/go-reddit/reddit"
+	"github.com/vartanbeno/go-reddit/v2/reddit"
 	"go.uber.org/zap"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"

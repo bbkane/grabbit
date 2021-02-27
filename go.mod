@@ -9,7 +9,7 @@ require (
 	github.com/bbkane/sugarkane v0.1.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/vartanbeno/go-reddit v1.0.1-0.20200905042949-a9e42b21b1bf
+	github.com/vartanbeno/go-reddit/v2 v2.0.1
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
