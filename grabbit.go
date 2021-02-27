@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -27,6 +28,9 @@ var version = "devVersion"
 var commit = "devCommit"
 var date = "devDate"
 var builtBy = "devBuiltBy"
+
+//go:embed embedded/grabbit.yaml
+var embeddedConfig []byte
 
 type subreddit struct {
 	Name        string
@@ -303,27 +307,10 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 func editConfig(configPath string, editor string) error {
 	// TODO: make this a serialized config struct
 	// so I get a compile warning if there's problems
-	emptyConfigContent := []byte(`version: 2.0.0
-# make lumberjacklogger nil to not log to file
-lumberjacklogger:
-  filename: ~/.config/grabbit.jsonl
-  maxsize: 5  # megabytes
-  maxbackups: 0
-  maxage: 30  # days
-subreddits:
-  - name: earthporn
-    destination: ~/Pictures/grabbit
-    timeframe: "day"
-    limit: 5
-  - name: cityporn
-    destination: ~/Pictures/grabbit
-    timeframe: "day"
-    limit: 6
-`)
 
 	_, err := os.Stat(configPath)
 	if os.IsNotExist(err) {
-		err = ioutil.WriteFile(configPath, emptyConfigContent, 0644)
+		err = ioutil.WriteFile(configPath, embeddedConfig, 0644)
 		if err != nil {
 			sugarkane.Printw(os.Stderr,
 				"can't write config",

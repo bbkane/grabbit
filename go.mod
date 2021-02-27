@@ -1,6 +1,6 @@
 module github.com/bbkane/grabbit
 
-go 1.15
+go 1.16
 
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
@@ -12,5 +12,5 @@ require (
 	go.uber.org/zap v1.16.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )
