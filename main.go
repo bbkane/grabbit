@@ -261,6 +261,7 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 						"filePath", filePath,
 						"url", post.URL,
 					)
+					continue
 				} else {
 					sk.Errorw(
 						"downloadFile error",

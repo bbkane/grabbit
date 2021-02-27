@@ -7,9 +7,9 @@ lumberjacklogger:
 subreddits:
   - name: earthporn
     destination: ~/Pictures/grabbit
-    timeframe: "day"
+    timeframe: "week"
     limit: 5
   - name: cityporn
     destination: ~/Pictures/grabbit
-    timeframe: "day"
+    timeframe: "week"
     limit: 6
