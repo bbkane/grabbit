@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -21,6 +20,8 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v2"
+
+	"github.com/bbkane/glib"
 )
 
 // These will be overwritten by goreleaser
@@ -160,7 +161,7 @@ func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 
 	subreddits := make([]subreddit, 0)
 	for _, sr := range cfg.Subreddits {
-		dirPath, err := validateDirectory(sr.Destination)
+		dirPath, err := glib.ValidateDirectory(sr.Destination)
 		if err != nil {
 			return lumberjackLogger, []subreddit{}, errors.Wrapf(err, "Directory in config error: %v\n", sr.Destination)
 		}
@@ -170,28 +171,6 @@ func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
 	}
 
 	return lumberjackLogger, subreddits, nil
-}
-
-// validateDirectory expands a directory and checks that it exists
-// it returns the full path to the directory on success
-// validateDirectory("~/foo") -> ("/home/bbkane/foo", nil)
-func validateDirectory(dir string) (string, error) {
-	dirPath, err := homedir.Expand(dir)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-	info, err := os.Stat(dirPath)
-	if os.IsNotExist(err) {
-		return "", errors.Wrapf(err, "Directory does not exist: %v\n", dirPath)
-	}
-	if err != nil {
-		return "", errors.Wrapf(err, "Directory error: %v\n", dirPath)
-
-	}
-	if !info.IsDir() {
-		return "", errors.Errorf("Directory is a file, not a directory: %#v\n", dirPath)
-	}
-	return dirPath, nil
 }
 
 // validateImageURL tries to extract a valid image file name from a URL
@@ -304,77 +283,6 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 	return nil
 }
 
-func editConfig(configPath string, editor string) error {
-	// TODO: make this a serialized config struct
-	// so I get a compile warning if there's problems
-
-	_, err := os.Stat(configPath)
-	if os.IsNotExist(err) {
-		err = ioutil.WriteFile(configPath, embeddedConfig, 0644)
-		if err != nil {
-			sugarkane.Printw(os.Stderr,
-				"can't write config",
-				"err", err,
-			)
-			return err
-		}
-		sugarkane.Printw(os.Stdout,
-			"wrote default config",
-			"configPath", configPath,
-		)
-	} else if err != nil {
-		sugarkane.Printw(os.Stderr,
-			"can't write config",
-			"err", err,
-		)
-		return err
-	}
-
-	if editor == "" {
-		editor = os.Getenv("EDITOR")
-	}
-	if editor == "" {
-		if runtime.GOOS == "windows" {
-			editor = "notepad"
-		} else if runtime.GOOS == "darwin" {
-			editor = "open"
-		} else if runtime.GOOS == "linux" {
-			editor = "xdg-open"
-		} else {
-			editor = "vim"
-		}
-	}
-	executable, err := exec.LookPath(editor)
-	if err != nil {
-		sugarkane.Printw(os.Stderr,
-			"can't find editor",
-			"err", err,
-		)
-		return err
-	}
-
-	sugarkane.Printw(os.Stderr,
-		"Opening config",
-		"editor", executable,
-		"configPath", configPath,
-	)
-
-	cmd := exec.Command(executable, configPath)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		sugarkane.Printw(os.Stderr,
-			"editor cmd error",
-			"err", err,
-		)
-		return err
-	}
-
-	return nil
-}
-
 func run() error {
 
 	// parse the CLI args
@@ -404,7 +312,8 @@ func run() error {
 	}
 
 	if cmd == configCmdEditCmd.FullCommand() {
-		return editConfig(configPath, *configCmdEditCmdEditorFlag)
+		return glib.EditFile(embeddedConfig, configPath, *configCmdEditCmdEditorFlag)
+		// TODO: add logging if this fails once sugarkane is integrated
 	}
 	if cmd == versionCmd.FullCommand() {
 		sugarkane.Printw(os.Stdout,
