@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/bbkane/grabbit/sugarkane"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/reddit"
@@ -22,6 +21,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/bbkane/glib"
+	"github.com/bbkane/sugarkane"
 )
 
 // These will be overwritten by goreleaser
@@ -306,18 +306,28 @@ func run() error {
 	if err != nil {
 		err = errors.WithStack(err)
 		sugarkane.Printw(os.Stderr,
-			"config error",
+			"ERROR: config error",
 			"err", err,
 		)
 	}
 
 	if cmd == configCmdEditCmd.FullCommand() {
-		return glib.EditFile(embeddedConfig, configPath, *configCmdEditCmdEditorFlag)
-		// TODO: add logging if this fails once sugarkane is integrated
+		err = glib.EditFile(embeddedConfig, *appConfigPathFlag, *configCmdEditCmdEditorFlag)
+		if err != nil {
+			sugarkane.Printw(os.Stderr,
+				"ERROR: Unable to edit config",
+				"configPath", *appConfigPathFlag,
+				"editorPath", *configCmdEditCmdEditorFlag,
+				"err", err,
+			)
+			return err
+		}
+		return nil
 	}
+
 	if cmd == versionCmd.FullCommand() {
 		sugarkane.Printw(os.Stdout,
-			"Version and build information",
+			"INFO: Version and build information",
 			"builtBy", builtBy,
 			"commit", commit,
 			"date", date,
