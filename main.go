@@ -110,15 +110,15 @@ func downloadImage(URL string, fileName string) error {
 	return err
 }
 
-func genFilePath(destinationDir string, subreddit string, title string, urlFileName string) (string, error) {
+func genFilePath(destinationDir string, subredditName string, title string, urlFileName string) (string, error) {
 
 	for _, s := range []string{" ", "/", "\\", "\n", "\r", "\x00"} {
 		urlFileName = strings.ReplaceAll(urlFileName, s, "_")
-		subreddit = strings.ReplaceAll(subreddit, s, "_")
+		subredditName = strings.ReplaceAll(subredditName, s, "_")
 		title = strings.ReplaceAll(title, s, "_")
 	}
 
-	fullFileName := subreddit + "_" + title + "_" + urlFileName
+	fullFileName := subredditName + "_" + title + "_" + urlFileName
 	filePath := filepath.Join(destinationDir, fullFileName)
 
 	// remove chars from title if it's too long for the OS to handle
@@ -130,7 +130,7 @@ func genFilePath(destinationDir string, subreddit string, title string, urlFileN
 		}
 
 		title = title[:len(title)-toChop]
-		fullFileName = subreddit + "_" + title + "_" + urlFileName
+		fullFileName = subredditName + "_" + title + "_" + urlFileName
 		filePath = filepath.Join(destinationDir, fullFileName)
 	}
 	return filePath, nil
@@ -224,18 +224,28 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 			// not fatal, we can continue with other subreddits
 			sk.Errorw(
 				"Can't use subreddit",
-				"subreddit", subreddit,
+				"subreddit", subreddit.Name,
 				"err", errors.WithStack(err),
 			)
 			continue
 		}
 
 		for _, post := range posts {
+			if post.NSFW {
+				sk.Errorw(
+					"Skipping NSFW post",
+					"subreddit", subreddit.Name,
+					"post", post.Title,
+					"url", post.URL,
+				)
+				continue
+			}
 			urlFileName, err := validateImageURL(post.URL)
 			if err != nil {
 				sk.Errorw(
 					"can't download image",
 					"subreddit", subreddit.Name,
+					"post", post.Title,
 					"url", post.URL,
 					"err", err,
 				)
@@ -247,6 +257,7 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 				sk.Errorw(
 					"genFilePath err",
 					"subreddit", subreddit.Name,
+					"post", post.Title,
 					"url", post.URL,
 					"err", errors.WithStack(err),
 				)
@@ -258,6 +269,7 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 					sk.Infow(
 						"file exists!",
 						"subreddit", subreddit.Name,
+						"post", post.Title,
 						"filePath", filePath,
 						"url", post.URL,
 					)
@@ -266,6 +278,7 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 					sk.Errorw(
 						"downloadFile error",
 						"subreddit", subreddit.Name,
+						"post", post.Title,
 						"url", post.URL,
 						"err", errors.WithStack(err),
 					)
@@ -276,6 +289,7 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 			sk.Infow(
 				"downloaded file",
 				"subreddit", subreddit.Name,
+				"post", post.Title,
 				"filePath", filePath,
 				"url", post.URL,
 			)
