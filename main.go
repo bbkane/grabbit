@@ -2,15 +2,18 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	_ "embed"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -205,6 +208,35 @@ func grab(sk *sugarkane.SugarKane, subreddits []subreddit) error {
 			"err", err,
 		)
 		return err
+	}
+
+	// Test connection
+	{
+		conn, err := tls.DialWithDialer(
+			&net.Dialer{Timeout: time.Second * 30},
+			"tcp",
+			net.JoinHostPort("reddit.com", "443"),
+			nil,
+		)
+		if err != nil {
+			err = errors.WithStack(err)
+			sk.Errorw(
+				"Can't connect to reddit",
+				"conn", conn,
+				"err", err,
+			)
+			return err
+		}
+		err = conn.Close()
+		if err != nil {
+			err = errors.WithStack(err)
+			sk.Errorw(
+				"Can't close connection",
+				"conn", conn,
+				"err", err,
+			)
+			return err
+		}
 	}
 
 	ctx := context.Background()
