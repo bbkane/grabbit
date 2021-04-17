@@ -26,7 +26,7 @@ grabbit grab
 
 - Run grabbit on a schedule: [./schedule_it.md](./schedule_it.md)
 - Hack on grabbit: [./dev_notes.md](./dev_notes.md)
-- [./LICENSE](MIT Licensed)
+- [MIT Licensed](./LICENSE)
 
 ## 3rd Party Credits
 
