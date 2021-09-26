@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,6 +27,12 @@ import (
 
 	"github.com/bbkane/glib"
 	"github.com/bbkane/logos"
+
+	w "github.com/bbkane/warg"
+	c "github.com/bbkane/warg/command"
+	f "github.com/bbkane/warg/flag"
+	s "github.com/bbkane/warg/section"
+	v "github.com/bbkane/warg/value"
 )
 
 // These will be overwritten by goreleaser
@@ -429,9 +437,125 @@ func run() error {
 	}
 }
 
-func main() {
-	err := run()
+func run2() error {
+	app := w.New(
+		"grabbit",
+		"v0.0.0",
+		s.NewSection(
+			"Get top images from subreddits",
+			s.WithCommand(
+				"grab",
+				"Grab images. Use `config edit` first to create a config",
+				c.DoNothing,
+				c.WithFlag(
+					"--subreddit-name",
+					"subreddit to grab",
+					v.StringSliceEmpty,
+					f.Default("wallpapers"),
+					f.ConfigPath("subreddits[].name", v.StringSliceFromInterface),
+				),
+				c.WithFlag(
+					"--subreddit-destination",
+					"Where to store the subreddit",
+					v.StringSliceEmpty,
+					f.Default("~/Pictures/grabbit"),
+					f.ConfigPath("subreddits[].destination", v.StringSliceFromInterface),
+				),
+				c.WithFlag(
+					"--subreddit-timeframe",
+					"Take the top subreddits from this timeframe",
+					v.StringSliceEmpty,
+					f.Default("week"),
+					f.ConfigPath("subreddits[].timeframe", v.StringSliceFromInterface),
+				),
+				c.WithFlag(
+					"--subreddit-limit",
+					"max number of links to try to download",
+					v.IntSliceEmpty,
+					f.Default("5"),
+					f.ConfigPath("subreddits[].limit", v.IntSliceFromInterface),
+				),
+			),
+			s.WithFlag(
+				"--log-filename",
+				"log filename",
+				v.StringEmpty,
+				f.Default("~/.config/grabbit.jsonl"),
+				f.ConfigPath("lumberjacklogger.filename", v.StringFromInterface),
+			),
+			s.WithFlag(
+				"--log-maxage",
+				"max age before log rotation in days",
+				v.IntEmpty,
+				f.Default("30"),
+				f.ConfigPath("lumberjacklogger.maxage", v.IntFromFloatOrIntInterface),
+			),
+			s.WithFlag(
+				"--log-maxbackups",
+				"num backups for the log",
+				v.IntEmpty,
+				f.Default("0"),
+				f.ConfigPath("lumberjacklogger.maxbackups", v.IntFromFloatOrIntInterface),
+			),
+			s.WithFlag(
+				"--log-maxsize",
+				"max size of log in megabytes",
+				v.IntEmpty,
+				f.Default("5"),
+				f.ConfigPath("lumberjacklogger.maxsize", v.IntFromFloatOrIntInterface),
+			),
+			s.WithSection(
+				"config",
+				"config commands",
+				s.WithCommand(
+					"edit",
+					"Edit or create configuration file. Uses $EDITOR as a fallback",
+					c.DoNothing,
+					c.WithFlag(
+						"--editor",
+						"path to editor",
+						v.StringEmpty,
+						f.Default("vi"),
+					),
+				),
+			),
+		),
+		w.ConfigFlag(
+			"--config-path",
+			w.JSONUnmarshaller,
+			// YAMLUnmarshaller,
+			"config filepath",
+			f.Default("/Users/bbkane/tmp.json"),
+			// f.Default("/Users/bbkane/.config/grabbit.yaml"),
+		),
+	)
+	err := app.Run(os.Args)
 	if err != nil {
-		os.Exit(1)
+		return err
+	}
+	return nil
+}
+
+func YAMLUnmarshaller(filePath string) (map[string]interface{}, error) {
+	var m map[string]interface{}
+
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		// the file not existing is ok
+		return m, nil
+	}
+
+	err = yaml.Unmarshal(content, &m)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("%#v\n", m)
+	return m, nil
+}
+
+func main() {
+	err := run2()
+	if err != nil {
+		log.Panic(err)
 	}
 }
