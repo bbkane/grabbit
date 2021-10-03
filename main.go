@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -30,6 +29,7 @@ import (
 
 	w "github.com/bbkane/warg"
 	c "github.com/bbkane/warg/command"
+	"github.com/bbkane/warg/configreader/yamlreader"
 	f "github.com/bbkane/warg/flag"
 	s "github.com/bbkane/warg/section"
 	v "github.com/bbkane/warg/value"
@@ -488,21 +488,21 @@ func run2() error {
 				"max age before log rotation in days",
 				v.IntEmpty,
 				f.Default("30"),
-				f.ConfigPath("lumberjacklogger.maxage", v.IntFromFloatOrIntInterface),
+				f.ConfigPath("lumberjacklogger.maxage", v.IntFromInterface),
 			),
 			s.WithFlag(
 				"--log-maxbackups",
 				"num backups for the log",
 				v.IntEmpty,
 				f.Default("0"),
-				f.ConfigPath("lumberjacklogger.maxbackups", v.IntFromFloatOrIntInterface),
+				f.ConfigPath("lumberjacklogger.maxbackups", v.IntFromInterface),
 			),
 			s.WithFlag(
 				"--log-maxsize",
 				"max size of log in megabytes",
 				v.IntEmpty,
 				f.Default("5"),
-				f.ConfigPath("lumberjacklogger.maxsize", v.IntFromFloatOrIntInterface),
+				f.ConfigPath("lumberjacklogger.maxsize", v.IntFromInterface),
 			),
 			s.WithSection(
 				"config",
@@ -522,11 +522,10 @@ func run2() error {
 		),
 		w.ConfigFlag(
 			"--config-path",
-			w.JSONUnmarshaller,
-			// YAMLUnmarshaller,
+			yamlreader.NewYAMLConfigReader,
 			"config filepath",
-			f.Default("/Users/bbkane/tmp.json"),
-			// f.Default("/Users/bbkane/.config/grabbit.yaml"),
+			// f.Default("/Users/bbkane/tmp.json"),
+			f.Default("/Users/bbkane/tmp.yaml"),
 		),
 	)
 	err := app.Run(os.Args)
@@ -534,23 +533,6 @@ func run2() error {
 		return err
 	}
 	return nil
-}
-
-func YAMLUnmarshaller(filePath string) (map[string]interface{}, error) {
-	var m map[string]interface{}
-
-	content, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		// the file not existing is ok
-		return m, nil
-	}
-
-	err = yaml.Unmarshal(content, &m)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("%#v\n", m)
-	return m, nil
 }
 
 func main() {
