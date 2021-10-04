@@ -437,50 +437,123 @@ func run() error {
 	}
 }
 
+func grab2(passedFlags f.FlagValues) error {
+
+	// retrieve types:
+	lumberJackLogger := &lumberjack.Logger{
+		Filename:   passedFlags["--log-filename"].(string),
+		MaxAge:     passedFlags["--log-maxage"].(int),
+		MaxBackups: passedFlags["--log-maxbackups"].(int),
+		MaxSize:    passedFlags["--log-maxsize"].(int),
+	}
+
+	logger := logos.NewLogger(
+		logos.NewZapSugaredLogger(
+			// TODO: version should be available to passed flags
+			lumberJackLogger, zap.DebugLevel, version,
+		),
+	)
+	defer logger.Sync()
+	logger.LogOnPanic()
+
+	subredditDestinations := passedFlags["--subreddit-destination"].([]string)
+	subredditLimits := passedFlags["--subreddit-limit"].([]int)
+	subredditNames := passedFlags["--subreddit-name"].([]string)
+	subredditTimeframes := passedFlags["--subreddit-timeframe"].([]string)
+
+	if !(len(subredditDestinations) == len(subredditLimits) &&
+		len(subredditLimits) == len(subredditNames) &&
+		len(subredditNames) == len(subredditTimeframes)) {
+		logger.Errorw(
+			"the following lengths should be equal",
+			"len(subredditDestinations)", len(subredditDestinations),
+			"len(subredditLimits)", len(subredditLimits),
+			"len(subredditNames)", len(subredditNames),
+			"len(subredditTimeframes)", len(subredditTimeframes),
+		)
+		return errors.New("Non-matching lengths")
+	}
+
+	var expandedDestinations []string
+	for _, e := range subredditDestinations {
+		expanded, err := homedir.Expand(e)
+		if err != nil {
+			err = errors.WithStack(err)
+			logger.Errorw(
+				"Could not expand homedir",
+				"path", e,
+				"err", err,
+			)
+			return err
+		}
+		expandedDestinations = append(expandedDestinations, expanded)
+	}
+
+	var subreddits []subreddit
+	for i := 0; i < len(subredditDestinations); i++ {
+		subreddits = append(subreddits, subreddit{
+			Name:        subredditNames[i],
+			Destination: expandedDestinations[i],
+			Timeframe:   subredditTimeframes[i],
+			Limit:       subredditLimits[i],
+		})
+	}
+
+	return grab(logger, subreddits)
+}
+
 func run2() error {
+	home, err := homedir.Dir()
+	if err != nil {
+		return errors.Errorf("could not determine $HOME: %v", err)
+	}
+	grabCmd := c.NewCommand(
+		"Grab images. Use `config edit` first to create a config",
+		grab2,
+		c.WithFlag(
+			"--subreddit-name",
+			"subreddit to grab",
+			v.StringSliceEmpty,
+			f.Default("wallpapers"),
+			f.ConfigPath("subreddits[].name", v.StringSliceFromInterface),
+		),
+		c.WithFlag(
+			"--subreddit-destination",
+			"Where to store the subreddit",
+			v.StringSliceEmpty,
+			f.Default(filepath.Join(home, "Pictures/grabbit")),
+			f.ConfigPath("subreddits[].destination", v.StringSliceFromInterface),
+		),
+		c.WithFlag(
+			"--subreddit-timeframe",
+			"Take the top subreddits from this timeframe",
+			v.StringSliceEmpty,
+			f.Default("week"),
+			f.ConfigPath("subreddits[].timeframe", v.StringSliceFromInterface),
+		),
+		c.WithFlag(
+			"--subreddit-limit",
+			"max number of links to try to download",
+			v.IntSliceEmpty,
+			f.Default("5"),
+			f.ConfigPath("subreddits[].limit", v.IntSliceFromInterface),
+		),
+	)
+
 	app := w.New(
 		"grabbit",
 		"v0.0.0",
 		s.NewSection(
 			"Get top images from subreddits",
-			s.WithCommand(
+			s.AddCommand(
 				"grab",
-				"Grab images. Use `config edit` first to create a config",
-				c.DoNothing,
-				c.WithFlag(
-					"--subreddit-name",
-					"subreddit to grab",
-					v.StringSliceEmpty,
-					f.Default("wallpapers"),
-					f.ConfigPath("subreddits[].name", v.StringSliceFromInterface),
-				),
-				c.WithFlag(
-					"--subreddit-destination",
-					"Where to store the subreddit",
-					v.StringSliceEmpty,
-					f.Default("~/Pictures/grabbit"),
-					f.ConfigPath("subreddits[].destination", v.StringSliceFromInterface),
-				),
-				c.WithFlag(
-					"--subreddit-timeframe",
-					"Take the top subreddits from this timeframe",
-					v.StringSliceEmpty,
-					f.Default("week"),
-					f.ConfigPath("subreddits[].timeframe", v.StringSliceFromInterface),
-				),
-				c.WithFlag(
-					"--subreddit-limit",
-					"max number of links to try to download",
-					v.IntSliceEmpty,
-					f.Default("5"),
-					f.ConfigPath("subreddits[].limit", v.IntSliceFromInterface),
-				),
+				grabCmd,
 			),
 			s.WithFlag(
 				"--log-filename",
 				"log filename",
 				v.StringEmpty,
-				f.Default("~/.config/grabbit.jsonl"),
+				f.Default(filepath.Join(home, ".config/grabbit.jsonl")),
 				f.ConfigPath("lumberjacklogger.filename", v.StringFromInterface),
 			),
 			s.WithFlag(
@@ -524,11 +597,10 @@ func run2() error {
 			"--config-path",
 			yamlreader.NewYAMLConfigReader,
 			"config filepath",
-			// f.Default("/Users/bbkane/tmp.json"),
-			f.Default("/Users/bbkane/tmp.yaml"),
+			f.Default(filepath.Join(home, "tmp.yaml")),
 		),
 	)
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		return err
 	}
