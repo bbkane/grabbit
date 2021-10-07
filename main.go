@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -22,9 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/v2/reddit"
 	"go.uber.org/zap"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
-	"gopkg.in/yaml.v2"
 
 	"github.com/bbkane/glib"
 	"github.com/bbkane/logos"
@@ -37,12 +34,6 @@ import (
 	v "github.com/bbkane/warg/value"
 )
 
-// These will be overwritten by goreleaser
-var version = "devVersion"
-var commit = "devCommit"
-var date = "devDate"
-var builtBy = "devBuiltBy"
-
 //go:embed embedded/grabbit.yaml
 var embeddedConfig []byte
 
@@ -51,12 +42,6 @@ type subreddit struct {
 	Destination string
 	Timeframe   string
 	Limit       int
-}
-
-type config struct {
-	Version          string
-	LumberjackLogger *lumberjack.Logger `yaml:"lumberjacklogger"`
-	Subreddits       []subreddit
 }
 
 // downloadImage does not overwrite existing files
@@ -149,43 +134,6 @@ func genFilePath(destinationDir string, subredditName string, title string, urlF
 	return filePath, nil
 }
 
-func parseConfig(configBytes []byte) (*lumberjack.Logger, []subreddit, error) {
-
-	cfg := config{}
-	err := yaml.UnmarshalStrict(configBytes, &cfg)
-	if err != nil {
-		// not ok to get invalid YAML
-		return nil, []subreddit{}, errors.WithStack(err)
-	}
-
-	var lumberjackLogger *lumberjack.Logger = nil
-
-	// we can get a valid config with a nil logger
-	if cfg.LumberjackLogger != nil {
-		// Note that if the directories to here don't exist, lumberjack will
-		// make them
-		f, err := homedir.Expand(cfg.LumberjackLogger.Filename)
-		if err != nil {
-			return nil, []subreddit{}, errors.WithStack(err)
-		}
-		cfg.LumberjackLogger.Filename = f
-		lumberjackLogger = cfg.LumberjackLogger
-	}
-
-	subreddits := make([]subreddit, 0)
-	for _, sr := range cfg.Subreddits {
-		dirPath, err := glib.ValidateDirectory(sr.Destination)
-		if err != nil {
-			return lumberjackLogger, []subreddit{}, errors.Wrapf(err, "Directory in config error: %v\n", sr.Destination)
-		}
-		sr.Destination = dirPath
-
-		subreddits = append(subreddits, sr)
-	}
-
-	return lumberjackLogger, subreddits, nil
-}
-
 // validateImageURL tries to extract a valid image file name from a URL
 // validateImageURL("https://bob.com/img.jpg?abc") -> nil, "img.jpg"
 func validateImageURL(fullURL string) (string, error) {
@@ -209,7 +157,7 @@ func validateImageURL(fullURL string) (string, error) {
 }
 
 func grab(logger *logos.Logger, subreddits []subreddit) error {
-	ua := runtime.GOOS + ":" + "grabbit" + ":" + version + " (github.com/bbkane/grabbit)"
+	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (github.com/bbkane/grabbit)"
 	client, err := reddit.NewReadonlyClient(reddit.WithUserAgent(ua))
 	if err != nil {
 		err = errors.WithStack(err)
@@ -338,105 +286,6 @@ func grab(logger *logos.Logger, subreddits []subreddit) error {
 		}
 	}
 	return nil
-}
-
-func run() error {
-
-	// parse the CLI args
-	app := kingpin.New("grabbit", "Get top images from subreddits").UsageTemplate(kingpin.DefaultUsageTemplate)
-	app.HelpFlag.Short('h')
-	defaultConfigPath := "~/.config/grabbit.yaml"
-	appConfigPathFlag := app.Flag("config-path", "config filepath").Short('c').Default(defaultConfigPath).String()
-
-	configCmd := app.Command("config", "config commands")
-	configCmdEditCmd := configCmd.Command("edit", "Edit or create configuration file. Uses $EDITOR as a fallback")
-	configCmdEditCmdEditorFlag := configCmdEditCmd.Flag("editor", "path to editor").Short('e').String()
-
-	grabCmd := app.Command("grab", "Grab images. Use `config edit` first to create a config")
-
-	versionCmd := app.Command("version", "print grabbit build and version information")
-
-	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
-
-	// work with commands that don't have dependencies (version, editConfig)
-	configPath, err := homedir.Expand(*appConfigPathFlag)
-	if err != nil {
-		err = errors.WithStack(err)
-		logos.Errorw(
-			"config error",
-			"err", err,
-		)
-	}
-
-	if cmd == configCmdEditCmd.FullCommand() {
-		err = glib.EditFile(embeddedConfig, *appConfigPathFlag, *configCmdEditCmdEditorFlag)
-		if err != nil {
-			logos.Errorw(
-				"Unable to edit config",
-				"configPath", *appConfigPathFlag,
-				"editorPath", *configCmdEditCmdEditorFlag,
-				"err", err,
-			)
-			return err
-		}
-		return nil
-	}
-
-	if cmd == versionCmd.FullCommand() {
-		logos.Infow(
-			"Version and build information",
-			"builtBy", builtBy,
-			"commit", commit,
-			"date", date,
-			"version", version,
-		)
-		return nil
-	}
-
-	// get a config
-	configBytes, cfgLoadErr := ioutil.ReadFile(configPath)
-	if cfgLoadErr != nil {
-		if cfgLoadErr != nil {
-			logos.Errorw(
-				"Config error - try `config edit`",
-				"cfgLoadErr", cfgLoadErr,
-				"cfgLoadErrMsg", cfgLoadErr.Error(),
-			)
-			return cfgLoadErr
-		}
-	}
-
-	lumberjackLogger, subreddits, cfgParseErr := parseConfig(configBytes)
-	if cfgParseErr != nil {
-		logos.Errorw(
-			"Can't parse config",
-			"err", cfgParseErr,
-		)
-		return cfgParseErr
-	}
-
-	// get a logger
-	logger := logos.NewLogger(
-		logos.NewZapSugaredLogger(
-			lumberjackLogger, zap.DebugLevel, version,
-		),
-	)
-	defer logger.Sync()
-	logger.LogOnPanic()
-
-	// dispatch commands that use dependencies
-	switch cmd {
-	case grabCmd.FullCommand():
-		return grab(logger, subreddits)
-	default:
-		err = errors.Errorf("Unknown command: %#v\n", cmd)
-		logger.Errorw(
-			"Unknown command",
-			"cmd", cmd,
-			"err", err,
-		)
-		return err
-	}
 }
 
 func editConfig(passedFlags f.FlagValues) error {
