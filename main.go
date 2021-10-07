@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -437,6 +439,39 @@ func run() error {
 	}
 }
 
+func editConfig(passedFlags f.FlagValues) error {
+	// retrieve types:
+	lumberJackLogger := &lumberjack.Logger{
+		Filename:   passedFlags["--log-filename"].(string),
+		MaxAge:     passedFlags["--log-maxage"].(int),
+		MaxBackups: passedFlags["--log-maxbackups"].(int),
+		MaxSize:    passedFlags["--log-maxsize"].(int),
+	}
+
+	logger := logos.NewLogger(
+		logos.NewZapSugaredLogger(
+			lumberJackLogger, zap.DebugLevel, getVersion(),
+		),
+	)
+	defer logger.Sync()
+	logger.LogOnPanic()
+
+	configPath := passedFlags["--config-path"].(string)
+	editor := passedFlags["--editor"].(string)
+
+	err := glib.EditFile(embeddedConfig, configPath, editor)
+	if err != nil {
+		logos.Errorw(
+			"Unable to edit config",
+			"configPath", configPath,
+			"editorPath", editor,
+			"err", err,
+		)
+		return err
+	}
+	return nil
+}
+
 func grab2(passedFlags f.FlagValues) error {
 
 	// retrieve types:
@@ -449,8 +484,7 @@ func grab2(passedFlags f.FlagValues) error {
 
 	logger := logos.NewLogger(
 		logos.NewZapSugaredLogger(
-			// TODO: version should be available to passed flags
-			lumberJackLogger, zap.DebugLevel, version,
+			lumberJackLogger, zap.DebugLevel, getVersion(),
 		),
 	)
 	defer logger.Sync()
@@ -502,11 +536,25 @@ func grab2(passedFlags f.FlagValues) error {
 	return grab(logger, subreddits)
 }
 
+func getVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	return info.Main.Version
+}
+
+func printVersion(_ f.FlagValues) error {
+	fmt.Println(getVersion())
+	return nil
+}
+
 func run2() error {
 	home, err := homedir.Dir()
 	if err != nil {
 		return errors.Errorf("could not determine $HOME: %v", err)
 	}
+
 	grabCmd := c.NewCommand(
 		"Grab images. Use `config edit` first to create a config",
 		grab2,
@@ -549,6 +597,11 @@ func run2() error {
 				"grab",
 				grabCmd,
 			),
+			s.WithCommand(
+				"version",
+				"Print version",
+				printVersion,
+			),
 			s.WithFlag(
 				"--log-filename",
 				"log filename",
@@ -583,7 +636,7 @@ func run2() error {
 				s.WithCommand(
 					"edit",
 					"Edit or create configuration file. Uses $EDITOR as a fallback",
-					c.DoNothing,
+					editConfig,
 					c.WithFlag(
 						"--editor",
 						"path to editor",
