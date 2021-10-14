@@ -390,34 +390,33 @@ func run2() error {
 			"subreddit to grab",
 			v.StringSliceEmpty,
 			f.Default("wallpapers"),
-			f.ConfigPath("subreddits[].name", v.StringSliceFromInterface),
+			f.ConfigPath("subreddits[].name"),
 		),
 		c.WithFlag(
 			"--subreddit-destination",
 			"Where to store the subreddit",
 			v.PathSliceEmpty,
 			f.Default("~/Pictures/grabbit"),
-			f.ConfigPath("subreddits[].destination", v.PathSliceFromInterface),
+			f.ConfigPath("subreddits[].destination"),
 		),
 		c.WithFlag(
 			"--subreddit-timeframe",
 			"Take the top subreddits from this timeframe",
 			v.StringSliceEmpty,
 			f.Default("week"),
-			f.ConfigPath("subreddits[].timeframe", v.StringSliceFromInterface),
+			f.ConfigPath("subreddits[].timeframe"),
 		),
 		c.WithFlag(
 			"--subreddit-limit",
 			"max number of links to try to download",
 			v.IntSliceEmpty,
 			f.Default("5"),
-			f.ConfigPath("subreddits[].limit", v.IntSliceFromInterface),
+			f.ConfigPath("subreddits[].limit"),
 		),
 	)
 
 	app := w.New(
 		"grabbit",
-		"v0.0.0",
 		s.NewSection(
 			"Get top images from subreddits",
 			s.AddCommand(
@@ -434,28 +433,28 @@ func run2() error {
 				"log filename",
 				v.PathEmpty,
 				f.Default("~/.config/grabbit.jsonl"),
-				f.ConfigPath("lumberjacklogger.filename", v.PathFromInterface),
+				f.ConfigPath("lumberjacklogger.filename"),
 			),
 			s.WithFlag(
 				"--log-maxage",
 				"max age before log rotation in days",
 				v.IntEmpty,
 				f.Default("30"),
-				f.ConfigPath("lumberjacklogger.maxage", v.IntFromInterface),
+				f.ConfigPath("lumberjacklogger.maxage"),
 			),
 			s.WithFlag(
 				"--log-maxbackups",
 				"num backups for the log",
 				v.IntEmpty,
 				f.Default("0"),
-				f.ConfigPath("lumberjacklogger.maxbackups", v.IntFromInterface),
+				f.ConfigPath("lumberjacklogger.maxbackups"),
 			),
 			s.WithFlag(
 				"--log-maxsize",
 				"max size of log in megabytes",
 				v.IntEmpty,
 				f.Default("5"),
-				f.ConfigPath("lumberjacklogger.maxsize", v.IntFromInterface),
+				f.ConfigPath("lumberjacklogger.maxsize"),
 			),
 			s.WithSection(
 				"config",
@@ -478,6 +477,12 @@ func run2() error {
 			yamlreader.NewYAMLConfigReader,
 			"config filepath",
 			f.Default("~/tmp.yaml"),
+		),
+		w.OverrideHelp(
+			os.Stderr,
+			[]string{"-h", "--help"},
+			w.DefaultSectionHelp,
+			w.DefaultCommandHelp,
 		),
 	)
 	err := app.Run(os.Args)
