@@ -383,7 +383,7 @@ func printVersion(_ f.FlagValues) error {
 
 func run2() error {
 	grabCmd := c.NewCommand(
-		"Grab images. Use `config edit` first to create a config",
+		"Grab images. Optionally use `config edit` first to create a config",
 		grab2,
 		c.WithFlag(
 			"--subreddit-name",
@@ -415,6 +415,35 @@ func run2() error {
 		),
 	)
 
+	appFooter := `Examples (assuming BASH-like shell):
+
+# Grab top images from wallpapers and earthporn
+grabbit grab \
+    --subreddit-destination ~/Pictures/wallpapers \
+    --subreddit-limit 5 \
+    --subreddit-name wallpapers \
+    --subreddit-timeframe day \
+    --subreddit-destination ~/Pictures/earthporn \
+    --subreddit-limit 10 \
+    --subreddit-name earthporn \
+    --subreddit-timeframe week
+
+# Write a config file
+echo 'subreddits:
+  - destination: ~/Pictures/wallpapers
+    limit: 5
+    name: wallpapers
+    timeframe: day
+  - destination: ~/Pictures/earthporn
+    limit: 10
+    name: earthporn
+    timeframe: week
+' > ./grabbit.yaml
+
+# Grab from config file
+grabbit grab --config-path ./grabbit.yaml
+`
+
 	app := w.New(
 		"grabbit",
 		s.NewSection(
@@ -423,6 +452,7 @@ func run2() error {
 				"grab",
 				grabCmd,
 			),
+			s.Footer(appFooter),
 			s.WithCommand(
 				"version",
 				"Print version",
