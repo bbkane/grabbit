@@ -154,136 +154,90 @@ func validateImageURL(fullURL string) (string, error) {
 	return "", errors.Errorf("urlFileName doesn't end in allowed extension: %#v , %#v\n ", urlFileName, allowedImageExtensions)
 }
 
-func grab(logger *logos.Logger, subreddits []subreddit) error {
-	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (github.com/bbkane/grabbit)"
-	client, err := reddit.NewReadonlyClient(reddit.WithUserAgent(ua))
+func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Client, subreddit subreddit) {
+	posts, _, err := client.Subreddit.TopPosts(
+		ctx,
+		subreddit.Name, &reddit.ListPostOptions{
+			ListOptions: reddit.ListOptions{
+				Limit: subreddit.Limit,
+			},
+			Time: subreddit.Timeframe,
+		})
+
 	if err != nil {
-		err = errors.WithStack(err)
+		// not fatal, we can continue with other subreddits
 		logger.Errorw(
-			"reddit initializion error",
-			"err", err,
+			"Can't use subreddit",
+			"subreddit", subreddit.Name,
+			"err", errors.WithStack(err),
 		)
-		return err
+		return
 	}
 
-	// Test connection
-	{
-		conn, err := tls.DialWithDialer(
-			&net.Dialer{Timeout: time.Second * 30},
-			"tcp",
-			net.JoinHostPort("reddit.com", "443"),
-			nil,
-		)
-		if err != nil {
-			err = errors.WithStack(err)
+	for _, post := range posts {
+		if post.NSFW {
 			logger.Errorw(
-				"Can't connect to reddit",
-				"conn", conn,
-				"err", err,
-			)
-			return err
-		}
-		err = conn.Close()
-		if err != nil {
-			err = errors.WithStack(err)
-			logger.Errorw(
-				"Can't close connection",
-				"conn", conn,
-				"err", err,
-			)
-			return err
-		}
-	}
-
-	ctx := context.Background()
-
-	for _, subreddit := range subreddits {
-
-		posts, _, err := client.Subreddit.TopPosts(
-			ctx,
-			subreddit.Name, &reddit.ListPostOptions{
-				ListOptions: reddit.ListOptions{
-					Limit: subreddit.Limit,
-				},
-				Time: subreddit.Timeframe,
-			})
-
-		if err != nil {
-			// not fatal, we can continue with other subreddits
-			logger.Errorw(
-				"Can't use subreddit",
+				"Skipping NSFW post",
 				"subreddit", subreddit.Name,
-				"err", errors.WithStack(err),
+				"post", post.Title,
+				"url", post.URL,
+			)
+			continue
+		}
+		urlFileName, err := validateImageURL(post.URL)
+		if err != nil {
+			logger.Errorw(
+				"can't download image",
+				"subreddit", subreddit.Name,
+				"post", post.Title,
+				"url", post.URL,
+				"err", err,
 			)
 			continue
 		}
 
-		for _, post := range posts {
-			if post.NSFW {
-				logger.Errorw(
-					"Skipping NSFW post",
+		filePath, err := genFilePath(subreddit.Destination, subreddit.Name, post.Title, urlFileName)
+		if err != nil {
+			logger.Errorw(
+				"genFilePath err",
+				"subreddit", subreddit.Name,
+				"post", post.Title,
+				"url", post.URL,
+				"err", errors.WithStack(err),
+			)
+			continue
+		}
+		err = downloadImage(post.URL, filePath)
+		if err != nil {
+			if os.IsExist(errors.Cause(err)) {
+				logger.Infow(
+					"file exists!",
 					"subreddit", subreddit.Name,
 					"post", post.Title,
+					"filePath", filePath,
 					"url", post.URL,
 				)
 				continue
-			}
-			urlFileName, err := validateImageURL(post.URL)
-			if err != nil {
+			} else {
 				logger.Errorw(
-					"can't download image",
-					"subreddit", subreddit.Name,
-					"post", post.Title,
-					"url", post.URL,
-					"err", err,
-				)
-				continue
-			}
-
-			filePath, err := genFilePath(subreddit.Destination, subreddit.Name, post.Title, urlFileName)
-			if err != nil {
-				logger.Errorw(
-					"genFilePath err",
+					"downloadFile error",
 					"subreddit", subreddit.Name,
 					"post", post.Title,
 					"url", post.URL,
 					"err", errors.WithStack(err),
 				)
-				continue
 			}
-			err = downloadImage(post.URL, filePath)
-			if err != nil {
-				if os.IsExist(errors.Cause(err)) {
-					logger.Infow(
-						"file exists!",
-						"subreddit", subreddit.Name,
-						"post", post.Title,
-						"filePath", filePath,
-						"url", post.URL,
-					)
-					continue
-				} else {
-					logger.Errorw(
-						"downloadFile error",
-						"subreddit", subreddit.Name,
-						"post", post.Title,
-						"url", post.URL,
-						"err", errors.WithStack(err),
-					)
-				}
-				continue
+			continue
 
-			}
-			logger.Infow(
-				"downloaded file",
-				"subreddit", subreddit.Name,
-				"post", post.Title,
-				"filePath", filePath,
-				"url", post.URL,
-			)
 		}
+		logger.Infow(
+			"downloaded file",
+			"subreddit", subreddit.Name,
+			"post", post.Title,
+			"filePath", filePath,
+			"url", post.URL,
+		)
 	}
-	return nil
 }
 
 func editConfig(passedFlags f.FlagValues) error {
@@ -319,7 +273,7 @@ func editConfig(passedFlags f.FlagValues) error {
 	return nil
 }
 
-func grab2(passedFlags f.FlagValues) error {
+func grab(passedFlags f.FlagValues) error {
 
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
@@ -355,17 +309,57 @@ func grab2(passedFlags f.FlagValues) error {
 		return errors.New("Non-matching lengths")
 	}
 
-	var subreddits []subreddit
+	// Test connection
+	{
+		conn, err := tls.DialWithDialer(
+			&net.Dialer{Timeout: time.Second * 30},
+			"tcp",
+			net.JoinHostPort("reddit.com", "443"),
+			nil,
+		)
+		if err != nil {
+			err = errors.WithStack(err)
+			logger.Errorw(
+				"Can't connect to reddit",
+				"conn", conn,
+				"err", err,
+			)
+			return err
+		}
+		err = conn.Close()
+		if err != nil {
+			err = errors.WithStack(err)
+			logger.Errorw(
+				"Can't close connection",
+				"conn", conn,
+				"err", err,
+			)
+			return err
+		}
+	}
+
+	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (github.com/bbkane/grabbit)"
+	client, err := reddit.NewReadonlyClient(reddit.WithUserAgent(ua))
+	if err != nil {
+		err = errors.WithStack(err)
+		logger.Errorw(
+			"reddit initializion error",
+			"err", err,
+		)
+		return err
+	}
+
+	ctx := context.Background()
+
 	for i := 0; i < len(subredditDestinations); i++ {
-		subreddits = append(subreddits, subreddit{
+		grabSubreddit(ctx, logger, client, subreddit{
 			Name:        subredditNames[i],
 			Destination: subredditDestinations[i],
 			Timeframe:   subredditTimeframes[i],
 			Limit:       subredditLimits[i],
 		})
 	}
-
-	return grab(logger, subreddits)
+	return nil
 }
 
 func getVersion() string {
@@ -381,35 +375,35 @@ func printVersion(_ f.FlagValues) error {
 	return nil
 }
 
-func run2() error {
+func main() {
 	grabCmd := c.NewCommand(
 		"Grab images. Optionally use `config edit` first to create a config",
-		grab2,
+		grab,
 		c.WithFlag(
 			"--subreddit-name",
 			"subreddit to grab",
-			v.StringSliceEmpty,
+			v.StringSlice,
 			f.Default("wallpapers"),
 			f.ConfigPath("subreddits[].name"),
 		),
 		c.WithFlag(
 			"--subreddit-destination",
 			"Where to store the subreddit",
-			v.PathSliceEmpty,
+			v.PathSlice,
 			f.Default("~/Pictures/grabbit"),
 			f.ConfigPath("subreddits[].destination"),
 		),
 		c.WithFlag(
 			"--subreddit-timeframe",
 			"Take the top subreddits from this timeframe",
-			v.StringSliceEmpty,
+			v.StringSlice,
 			f.Default("week"),
 			f.ConfigPath("subreddits[].timeframe"),
 		),
 		c.WithFlag(
 			"--subreddit-limit",
 			"max number of links to try to download",
-			v.IntSliceEmpty,
+			v.IntSlice,
 			f.Default("5"),
 			f.ConfigPath("subreddits[].limit"),
 		),
@@ -461,28 +455,28 @@ grabbit grab --config-path ./grabbit.yaml
 			s.WithFlag(
 				"--log-filename",
 				"log filename",
-				v.PathEmpty,
+				v.Path,
 				f.Default("~/.config/grabbit.jsonl"),
 				f.ConfigPath("lumberjacklogger.filename"),
 			),
 			s.WithFlag(
 				"--log-maxage",
 				"max age before log rotation in days",
-				v.IntEmpty,
+				v.Int,
 				f.Default("30"),
 				f.ConfigPath("lumberjacklogger.maxage"),
 			),
 			s.WithFlag(
 				"--log-maxbackups",
 				"num backups for the log",
-				v.IntEmpty,
+				v.Int,
 				f.Default("0"),
 				f.ConfigPath("lumberjacklogger.maxbackups"),
 			),
 			s.WithFlag(
 				"--log-maxsize",
 				"max size of log in megabytes",
-				v.IntEmpty,
+				v.Int,
 				f.Default("5"),
 				f.ConfigPath("lumberjacklogger.maxsize"),
 			),
@@ -496,7 +490,7 @@ grabbit grab --config-path ./grabbit.yaml
 					c.WithFlag(
 						"--editor",
 						"path to editor",
-						v.StringEmpty,
+						v.String,
 						f.Default("vi"),
 					),
 				),
@@ -515,17 +509,5 @@ grabbit grab --config-path ./grabbit.yaml
 			w.DefaultCommandHelp,
 		),
 	)
-	err := app.Run(os.Args)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func main() {
-	err := run2()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	app.MustRun()
 }
