@@ -500,7 +500,7 @@ grabbit grab --config-path ./grabbit.yaml
 			"--config-path",
 			yamlreader.NewYAMLConfigReader,
 			"config filepath",
-			f.Default("~/tmp.yaml"),
+			f.Default("~/.config/grabbit.yaml"),
 		),
 		w.OverrideHelp(
 			os.Stderr,
