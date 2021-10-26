@@ -1,6 +1,6 @@
 # Grabbit
 
-Grab subreddit images!! Very useful for getting nice wallpapers automatically - grabbit automatically skips images tagged NSFW. Designed to be easy to install/uninstall.
+Grab subreddit images!! Very useful for getting nice wallpapers automatically - grabbit automatically skips images tagged NSFW. Designed to be easy to install/uninstall and [MIT licensed](./LICENSE).
 
 ## @bbkane's Setup
 

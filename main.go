@@ -28,6 +28,7 @@ import (
 	c "github.com/bbkane/warg/command"
 	"github.com/bbkane/warg/configreader/yamlreader"
 	f "github.com/bbkane/warg/flag"
+	"github.com/bbkane/warg/help"
 	s "github.com/bbkane/warg/section"
 	v "github.com/bbkane/warg/value"
 )
@@ -240,7 +241,7 @@ func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Cli
 	}
 }
 
-func editConfig(passedFlags f.FlagValues) error {
+func editConfig(passedFlags f.PassedFlags) error {
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:   passedFlags["--log-filename"].(string),
@@ -273,7 +274,7 @@ func editConfig(passedFlags f.FlagValues) error {
 	return nil
 }
 
-func grab(passedFlags f.FlagValues) error {
+func grab(passedFlags f.PassedFlags) error {
 
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
@@ -370,13 +371,13 @@ func getVersion() string {
 	return info.Main.Version
 }
 
-func printVersion(_ f.FlagValues) error {
+func printVersion(_ f.PassedFlags) error {
 	fmt.Println(getVersion())
 	return nil
 }
 
 func main() {
-	grabCmd := c.NewCommand(
+	grabCmd := c.New(
 		"Grab images. Optionally use `config edit` first to create a config",
 		grab,
 		c.WithFlag(
@@ -385,6 +386,7 @@ func main() {
 			v.StringSlice,
 			f.Default("wallpapers"),
 			f.ConfigPath("subreddits[].name"),
+			f.Required(),
 		),
 		c.WithFlag(
 			"--subreddit-destination",
@@ -392,6 +394,7 @@ func main() {
 			v.PathSlice,
 			f.Default("~/Pictures/grabbit"),
 			f.ConfigPath("subreddits[].destination"),
+			f.Required(),
 		),
 		c.WithFlag(
 			"--subreddit-timeframe",
@@ -399,6 +402,7 @@ func main() {
 			v.StringSlice,
 			f.Default("week"),
 			f.ConfigPath("subreddits[].timeframe"),
+			f.Required(),
 		),
 		c.WithFlag(
 			"--subreddit-limit",
@@ -406,6 +410,7 @@ func main() {
 			v.IntSlice,
 			f.Default("5"),
 			f.ConfigPath("subreddits[].limit"),
+			f.Required(),
 		),
 	)
 
@@ -440,7 +445,7 @@ grabbit grab --config-path ./grabbit.yaml
 
 	app := w.New(
 		"grabbit",
-		s.NewSection(
+		s.New(
 			"Get top images from subreddits",
 			s.AddCommand(
 				"grab",
@@ -458,6 +463,7 @@ grabbit grab --config-path ./grabbit.yaml
 				v.Path,
 				f.Default("~/.config/grabbit.jsonl"),
 				f.ConfigPath("lumberjacklogger.filename"),
+				f.Required(),
 			),
 			s.WithFlag(
 				"--log-maxage",
@@ -465,6 +471,7 @@ grabbit grab --config-path ./grabbit.yaml
 				v.Int,
 				f.Default("30"),
 				f.ConfigPath("lumberjacklogger.maxage"),
+				f.Required(),
 			),
 			s.WithFlag(
 				"--log-maxbackups",
@@ -472,6 +479,7 @@ grabbit grab --config-path ./grabbit.yaml
 				v.Int,
 				f.Default("0"),
 				f.ConfigPath("lumberjacklogger.maxbackups"),
+				f.Required(),
 			),
 			s.WithFlag(
 				"--log-maxsize",
@@ -479,19 +487,22 @@ grabbit grab --config-path ./grabbit.yaml
 				v.Int,
 				f.Default("5"),
 				f.ConfigPath("lumberjacklogger.maxsize"),
+				f.Required(),
 			),
 			s.WithSection(
 				"config",
-				"config commands",
+				"Config commands",
 				s.WithCommand(
 					"edit",
-					"Edit or create configuration file. Uses $EDITOR as a fallback",
+					"Edit or create configuration file.",
 					editConfig,
 					c.WithFlag(
 						"--editor",
 						"path to editor",
 						v.String,
 						f.Default("vi"),
+						f.EnvVars("EDITOR"),
+						f.Required(),
 					),
 				),
 			),
@@ -505,9 +516,9 @@ grabbit grab --config-path ./grabbit.yaml
 		w.OverrideHelp(
 			os.Stderr,
 			[]string{"-h", "--help"},
-			w.DefaultSectionHelp,
-			w.DefaultCommandHelp,
+			help.DefaultSectionHelp,
+			help.DefaultCommandHelp,
 		),
 	)
-	app.MustRun()
+	app.MustRun(os.Args, os.LookupEnv)
 }
