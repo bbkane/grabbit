@@ -156,6 +156,17 @@ func validateImageURL(fullURL string) (string, error) {
 }
 
 func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Client, subreddit subreddit) {
+
+	_, err := glib.ValidateDirectory(subreddit.Destination)
+	if err != nil {
+		logger.Errorw(
+			"Directory error",
+			"directory", subreddit.Destination,
+			"err", err,
+		)
+		return
+	}
+
 	posts, _, err := client.Subreddit.TopPosts(
 		ctx,
 		subreddit.Name, &reddit.ListPostOptions{
@@ -221,7 +232,7 @@ func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Cli
 				continue
 			} else {
 				logger.Errorw(
-					"downloadFile error",
+					"download file error",
 					"subreddit", subreddit.Name,
 					"post", post.Title,
 					"url", post.URL,
@@ -363,12 +374,19 @@ func grab(passedFlags f.PassedFlags) error {
 	return nil
 }
 
+// This will be overriden by goreleaser
+var version = "unkown version: error reading goreleaser info"
+
 func getVersion() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
-		return "unknown"
+		return "unknown version: error reading build info"
 	}
-	return info.Main.Version
+	// go install will embed this
+	if info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return version
 }
 
 func printVersion(_ f.PassedFlags) error {
@@ -377,6 +395,21 @@ func printVersion(_ f.PassedFlags) error {
 }
 
 func main() {
+	appFooter := `Examples (assuming BASH-like shell):
+
+  # Grab!
+  grabbit grab \
+      --subreddit-destination . \
+      --subreddit-limit 5 \
+      --subreddit-name wallpapers \
+      --subreddit-timeframe day
+
+  # Create/Edit config file
+  grabbit config edit
+
+  # Grab from config file
+  grabbit grab
+`
 	grabCmd := c.New(
 		"Grab images. Optionally use `config edit` first to create a config",
 		grab,
@@ -384,6 +417,7 @@ func main() {
 			"--subreddit-name",
 			"subreddit to grab",
 			v.StringSlice,
+			f.Alias("-sn"),
 			f.Default("wallpapers"),
 			f.ConfigPath("subreddits[].name"),
 			f.Required(),
@@ -392,6 +426,7 @@ func main() {
 			"--subreddit-destination",
 			"Where to store the subreddit",
 			v.PathSlice,
+			f.Alias("-sd"),
 			f.Default("~/Pictures/grabbit"),
 			f.ConfigPath("subreddits[].destination"),
 			f.Required(),
@@ -399,7 +434,9 @@ func main() {
 		c.WithFlag(
 			"--subreddit-timeframe",
 			"Take the top subreddits from this timeframe",
+			// TODO: this should be a StringEnumSlice once that's implemented
 			v.StringSlice,
+			f.Alias("-st"),
 			f.Default("week"),
 			f.ConfigPath("subreddits[].timeframe"),
 			f.Required(),
@@ -414,35 +451,6 @@ func main() {
 		),
 	)
 
-	appFooter := `Examples (assuming BASH-like shell):
-
-# Grab top images from wallpapers and earthporn
-grabbit grab \
-    --subreddit-destination ~/Pictures/wallpapers \
-    --subreddit-limit 5 \
-    --subreddit-name wallpapers \
-    --subreddit-timeframe day \
-    --subreddit-destination ~/Pictures/earthporn \
-    --subreddit-limit 10 \
-    --subreddit-name earthporn \
-    --subreddit-timeframe week
-
-# Write a config file
-echo 'subreddits:
-  - destination: ~/Pictures/wallpapers
-    limit: 5
-    name: wallpapers
-    timeframe: day
-  - destination: ~/Pictures/earthporn
-    limit: 10
-    name: earthporn
-    timeframe: week
-' > ./grabbit.yaml
-
-# Grab from config file
-grabbit grab --config-path ./grabbit.yaml
-`
-
 	app := w.New(
 		"grabbit",
 		s.New(
@@ -456,6 +464,12 @@ grabbit grab --config-path ./grabbit.yaml
 				"version",
 				"Print version",
 				printVersion,
+			),
+			s.WithFlag(
+				"--color",
+				"colorized output",
+				v.StringEnum("true", "false", "auto"),
+				f.Default("auto"),
 			),
 			s.WithFlag(
 				"--log-filename",
@@ -500,6 +514,7 @@ grabbit grab --config-path ./grabbit.yaml
 						"--editor",
 						"path to editor",
 						v.String,
+						f.Alias("-e"),
 						f.Default("vi"),
 						f.EnvVars("EDITOR"),
 						f.Required(),
@@ -513,11 +528,15 @@ grabbit grab --config-path ./grabbit.yaml
 			"config filepath",
 			f.Default("~/.config/grabbit.yaml"),
 		),
-		w.OverrideHelp(
-			os.Stderr,
-			[]string{"-h", "--help"},
-			help.DefaultSectionHelp,
-			help.DefaultCommandHelp,
+		w.OverrideHelpFlag(
+			[]w.HelpFlagMapping{
+				{Name: "default", CommandHelp: help.DefaultCommandHelp, SectionHelp: help.DefaultSectionHelp},
+			},
+			os.Stdout,
+			"--help",
+			"Print help",
+			f.Alias("-h"),
+			f.Default("default"),
 		),
 	)
 	app.MustRun(os.Args, os.LookupEnv)

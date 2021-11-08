@@ -3,12 +3,18 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/bbkane/glib v0.1.0 h1:Zoq7Ab7HxTME/c2Gml0CGV4uo7bf3LhSmZXVaucSsqU=
 github.com/bbkane/glib v0.1.0/go.mod h1:JftSUz42c+N2HjyPKR2HdRdlMGPUDVTyCA8cLZk56sM=
+github.com/bbkane/glib v0.1.1 h1:oCNxYNroBBAla9xqUugWQLiGKCIr6KyTI0ly0ffM+NQ=
+github.com/bbkane/glib v0.1.1/go.mod h1:JftSUz42c+N2HjyPKR2HdRdlMGPUDVTyCA8cLZk56sM=
+github.com/bbkane/go-color v0.0.4 h1:JNQIHp1zFvREq4vAp8XXMS8+sGanlA01WN8ANmLpXt4=
+github.com/bbkane/go-color v0.0.4/go.mod h1:W6SaTp8XGZOFqIWelWcVorgHFak1EFnagkaHoB5G9eE=
 github.com/bbkane/logos v0.2.0 h1:gyXEBH4U/BVMcJKZy9YPXR/j4isanIL/2uZIlK+M6FU=
 github.com/bbkane/logos v0.2.0/go.mod h1:GQ3XgWAmHzzMwZocaY6nDLHcYZmnL5yiOCfb5+R+pNk=
 github.com/bbkane/warg v0.0.1 h1:dvlSse7vyqYLgx3aMlhtUz5Y3HjFyFTE61DMiXRJ3do=
 github.com/bbkane/warg v0.0.1/go.mod h1:Nfm/5S1jKMY2nBT8Qr7TV/m1J0B4lCOtHhdgC1uvano=
 github.com/bbkane/warg v0.0.2 h1:DCPkdWznr6q07U9F5/Gkf1XSw9YdU368bGSgQt2JSvE=
 github.com/bbkane/warg v0.0.2/go.mod h1:Nfm/5S1jKMY2nBT8Qr7TV/m1J0B4lCOtHhdgC1uvano=
+github.com/bbkane/warg v0.0.3 h1:pCGx5COevQzIDNJQiGjWZlwf9cnRYTNsdthTDsgk64k=
+github.com/bbkane/warg v0.0.3/go.mod h1:B2bGFtFXlXWP8cH7eU5rFT+SIlLJxhYQX0HBz2rmdAc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -23,6 +29,8 @@ github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORN
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
+github.com/mattn/go-isatty v0.0.14 h1:yVuAays6BHfxijgZPzw+3Zlu5yQgKGP2/hcQbHb7S9Y=
+github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
 github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -66,6 +74,8 @@ golang.org/x/sync v0.0.0-20190423024810-112230192c58 h1:8gQV6CLnAEikrhgkHFbMAEha
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c h1:F1jZWGFhYfh0Ci55sIpILtKKK8p3i2/krTr0H1rg74I=
+golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/tools v0.0.0-20190311212946-11955173bddd/go.mod h1:LCzVGOaR6xXOjkQ3onu1FJEFr0SW1gC7cKk1uF8kGRs=
 golang.org/x/tools v0.0.0-20190621195816-6e04913cbbac/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
