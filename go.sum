@@ -15,6 +15,8 @@ github.com/bbkane/warg v0.0.2 h1:DCPkdWznr6q07U9F5/Gkf1XSw9YdU368bGSgQt2JSvE=
 github.com/bbkane/warg v0.0.2/go.mod h1:Nfm/5S1jKMY2nBT8Qr7TV/m1J0B4lCOtHhdgC1uvano=
 github.com/bbkane/warg v0.0.3 h1:pCGx5COevQzIDNJQiGjWZlwf9cnRYTNsdthTDsgk64k=
 github.com/bbkane/warg v0.0.3/go.mod h1:B2bGFtFXlXWP8cH7eU5rFT+SIlLJxhYQX0HBz2rmdAc=
+github.com/bbkane/warg v0.0.5 h1:VVOiPlnrXysx1pt1VwwDxGVkqB4SVX6CB5TWxFrREso=
+github.com/bbkane/warg v0.0.5/go.mod h1:ErZUtgz63oHzRbLPu+OowPI5MDqIx5eWqa9vz69CM+o=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -76,6 +78,8 @@ golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c h1:F1jZWGFhYfh0Ci55sIpILtKKK8p3i2/krTr0H1rg74I=
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 h1:TyHqChC80pFkXWraUUf6RuB5IqFdQieMLwwCJokV2pc=
+golang.org/x/sys v0.0.0-20211124211545-fe61309f8881/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/tools v0.0.0-20190311212946-11955173bddd/go.mod h1:LCzVGOaR6xXOjkQ3onu1FJEFr0SW1gC7cKk1uF8kGRs=
 golang.org/x/tools v0.0.0-20190621195816-6e04913cbbac/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=

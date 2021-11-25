@@ -26,7 +26,7 @@ import (
 
 	w "github.com/bbkane/warg"
 	c "github.com/bbkane/warg/command"
-	"github.com/bbkane/warg/configreader/yamlreader"
+	"github.com/bbkane/warg/config/yamlreader"
 	f "github.com/bbkane/warg/flag"
 	"github.com/bbkane/warg/help"
 	s "github.com/bbkane/warg/section"
@@ -413,7 +413,7 @@ func main() {
 	grabCmd := c.New(
 		"Grab images. Optionally use `config edit` first to create a config",
 		grab,
-		c.WithFlag(
+		c.Flag(
 			"--subreddit-name",
 			"subreddit to grab",
 			v.StringSlice,
@@ -422,7 +422,7 @@ func main() {
 			f.ConfigPath("subreddits[].name"),
 			f.Required(),
 		),
-		c.WithFlag(
+		c.Flag(
 			"--subreddit-destination",
 			"Where to store the subreddit",
 			v.PathSlice,
@@ -431,7 +431,7 @@ func main() {
 			f.ConfigPath("subreddits[].destination"),
 			f.Required(),
 		),
-		c.WithFlag(
+		c.Flag(
 			"--subreddit-timeframe",
 			"Take the top subreddits from this timeframe",
 			// TODO: this should be a StringEnumSlice once that's implemented
@@ -441,7 +441,7 @@ func main() {
 			f.ConfigPath("subreddits[].timeframe"),
 			f.Required(),
 		),
-		c.WithFlag(
+		c.Flag(
 			"--subreddit-limit",
 			"max number of links to try to download",
 			v.IntSlice,
@@ -456,23 +456,23 @@ func main() {
 		"grabbit",
 		s.New(
 			"Get top images from subreddits",
-			s.AddCommand(
+			s.ExistingCommand(
 				"grab",
 				grabCmd,
 			),
 			s.Footer(appFooter),
-			s.WithCommand(
+			s.Command(
 				"version",
 				"Print version",
 				printVersion,
 			),
-			s.WithFlag(
+			s.Flag(
 				"--color",
 				"colorized output",
 				v.StringEnum("true", "false", "auto"),
 				f.Default("auto"),
 			),
-			s.WithFlag(
+			s.Flag(
 				"--log-filename",
 				"log filename",
 				v.Path,
@@ -480,7 +480,7 @@ func main() {
 				f.ConfigPath("lumberjacklogger.filename"),
 				f.Required(),
 			),
-			s.WithFlag(
+			s.Flag(
 				"--log-maxage",
 				"max age before log rotation in days",
 				v.Int,
@@ -488,7 +488,7 @@ func main() {
 				f.ConfigPath("lumberjacklogger.maxage"),
 				f.Required(),
 			),
-			s.WithFlag(
+			s.Flag(
 				"--log-maxbackups",
 				"num backups for the log",
 				v.Int,
@@ -496,7 +496,7 @@ func main() {
 				f.ConfigPath("lumberjacklogger.maxbackups"),
 				f.Required(),
 			),
-			s.WithFlag(
+			s.Flag(
 				"--log-maxsize",
 				"max size of log in megabytes",
 				v.Int,
@@ -504,14 +504,14 @@ func main() {
 				f.ConfigPath("lumberjacklogger.maxsize"),
 				f.Required(),
 			),
-			s.WithSection(
+			s.Section(
 				"config",
 				"Config commands",
-				s.WithCommand(
+				s.Command(
 					"edit",
 					"Edit or create configuration file.",
 					editConfig,
-					c.WithFlag(
+					c.Flag(
 						"--editor",
 						"path to editor",
 						v.String,
@@ -525,7 +525,7 @@ func main() {
 		),
 		w.ConfigFlag(
 			"--config",
-			yamlreader.NewYAMLConfigReader,
+			yamlreader.New,
 			"config filepath",
 			f.Alias("-c"),
 			f.Default("~/.config/grabbit.yaml"),
