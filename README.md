@@ -18,7 +18,17 @@ See my [personal config](https://github.com/bbkane/dotfiles/blob/master/grabbit/
 ## Use
 
 ```bash
+# Grab from passed flags
+grabbit grab \
+    --subreddit-destination . \
+    --subreddit-limit 5 \
+    --subreddit-name wallpapers \
+    --subreddit-timeframe day
+
+# Create/Edit config file
 grabbit config edit --editor /path/to/editor
+
+# Grab from config file
 grabbit grab
 ```
 

@@ -397,7 +397,7 @@ func printVersion(_ f.PassedFlags) error {
 func main() {
 	appFooter := `Examples (assuming BASH-like shell):
 
-  # Grab!
+  # Grab from passed flags
   grabbit grab \
       --subreddit-destination . \
       --subreddit-limit 5 \
@@ -405,7 +405,7 @@ func main() {
       --subreddit-timeframe day
 
   # Create/Edit config file
-  grabbit config edit
+  grabbit config edit --editor /path/to/editor
 
   # Grab from config file
   grabbit grab
