@@ -1,6 +1,6 @@
 # Grabbit
 
-Grab subreddit images!! Very useful for getting nice wallpapers automatically - grabbit automatically skips images tagged NSFW. Designed to be easy to install/uninstall and [MIT licensed](./LICENSE).
+A small single-binary CLI to grab images from Reddit - I've been surprised how much I enjoy seeing beautiful wallpapers when I lock/unlock my computer. grabbit automatically skips images tagged NSFW, designed to be easy to install/uninstall and is [MIT licensed](./LICENSE).
 
 ## @bbkane's Setup
 
