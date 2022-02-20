@@ -15,9 +15,9 @@ import (
 
 	"github.com/bbkane/glib"
 	"github.com/bbkane/logos"
-	"github.com/bbkane/warg/flag"
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/v2/reddit"
+	"go.bbkane.com/warg/flag"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
