@@ -303,7 +303,7 @@ func grab(passedFlags flag.PassedFlags) error {
 		}
 	}
 
-	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (github.com/bbkane/grabbit)"
+	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (go.bbkane.com/grabbit)"
 	client, err := reddit.NewReadonlyClient(reddit.WithUserAgent(ua))
 	if err != nil {
 		err = errors.WithStack(err)

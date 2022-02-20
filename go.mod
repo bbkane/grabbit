@@ -1,4 +1,4 @@
-module github.com/bbkane/grabbit/v4
+module go.bbkane.com/grabbit/v4
 
 go 1.16
 

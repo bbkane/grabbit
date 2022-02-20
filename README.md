@@ -12,7 +12,7 @@ See my [personal config](https://github.com/bbkane/dotfiles/blob/master/grabbit/
 
 - Homebrew: `brew install bbkane/tap/grabbit`
 - Download Mac/Linux/Windows executable: [GitHub releases](https://github.com/bbkane/grabbit/releases)
-- Go: `go install github.com/bbkane/grabbit/v4@latest`
+- Go: `go install go.bbkane.com/grabbit/v4@latest`
 - Build with [goreleaser](https://goreleaser.com/) after cloning: `goreleaser --snapshot --skip-publish --rm-dist`
 
 ## Use
