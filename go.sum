@@ -36,8 +36,6 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/bbkane/glib v0.1.1 h1:oCNxYNroBBAla9xqUugWQLiGKCIr6KyTI0ly0ffM+NQ=
 github.com/bbkane/glib v0.1.1/go.mod h1:JftSUz42c+N2HjyPKR2HdRdlMGPUDVTyCA8cLZk56sM=
-github.com/bbkane/logos v0.2.0 h1:gyXEBH4U/BVMcJKZy9YPXR/j4isanIL/2uZIlK+M6FU=
-github.com/bbkane/logos v0.2.0/go.mod h1:GQ3XgWAmHzzMwZocaY6nDLHcYZmnL5yiOCfb5+R+pNk=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
@@ -146,6 +144,8 @@ github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 go.bbkane.com/gocolor v0.0.4 h1:UI4ejgjHdC6oupH8src8+FQgbbfcZ6C7BSPZzecBjzs=
 go.bbkane.com/gocolor v0.0.4/go.mod h1:7AEOm8kyPlpj9qr/SL9mEXSceh8xM2w+eBm4deMRNHk=
+go.bbkane.com/logos v0.3.0 h1:NJZAoUp0dYW5Kl5A2Zxw+uGKGwiG/t7CgxGaM167+28=
+go.bbkane.com/logos v0.3.0/go.mod h1:IqUA0K5saG+eDGkY9LQOfJYO1nJOF3nnq8AWeHuViIU=
 go.bbkane.com/warg v0.0.12 h1:+Jwf70ey/dlPCDmEREJSd045p1eGTX7r482bT2v3Cwc=
 go.bbkane.com/warg v0.0.12/go.mod h1:kfv+iD8YFvnpqv9bUR2zp1PYTHHJWesIikcRcuJTgIc=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

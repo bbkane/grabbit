@@ -7,11 +7,11 @@ go 1.16
 
 require (
 	github.com/bbkane/glib v0.1.1
-	github.com/bbkane/logos v0.2.0
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/vartanbeno/go-reddit/v2 v2.0.1
+	go.bbkane.com/logos v0.3.0
 	go.bbkane.com/warg v0.0.12
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
