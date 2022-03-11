@@ -31,11 +31,11 @@ func editConfig(passedFlags flag.PassedFlags) error {
 	defer logger.Sync()
 	logger.LogOnPanic()
 
-	configPath, configPathExists := passedFlags["--config-path"].(string)
+	configPath, configPathExists := passedFlags["--config"].(string)
 	if !configPathExists {
-		err := errors.New("must path --config-path")
+		err := errors.New("must path --config")
 		logos.Errorw(
-			"Must pass --config-path",
+			"Must pass --config",
 			"err", err,
 		)
 		return err
