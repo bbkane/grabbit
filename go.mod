@@ -12,7 +12,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/vartanbeno/go-reddit/v2 v2.0.1
 	go.bbkane.com/logos v0.3.0
-	go.bbkane.com/warg v0.0.12
+	go.bbkane.com/warg v0.0.13
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.20.0

@@ -11,7 +11,7 @@ import (
 	"go.bbkane.com/warg/value"
 )
 
-func main() {
+func app() *warg.App {
 	appFooter := `Examples (assuming BASH-like shell):
 
   # Grab from passed flags
@@ -28,11 +28,11 @@ func main() {
   grabbit grab
 `
 	grabCmd := command.New(
-		command.HelpShort("Grab images. Optionally use `config edit` first to create a config"),
+		"Grab images. Optionally use `config edit` first to create a config",
 		grab,
 		command.Flag(
-			flag.Name("--subreddit-name"),
-			flag.HelpShort("subreddit to grab"),
+			"--subreddit-name",
+			"subreddit to grab",
 			value.StringSlice,
 			flag.Alias("-sn"),
 			flag.Default("earthporn", "wallpapers"),
@@ -40,8 +40,8 @@ func main() {
 			flag.Required(),
 		),
 		command.Flag(
-			flag.Name("--subreddit-destination"),
-			flag.HelpShort("Where to store the subreddit"),
+			"--subreddit-destination",
+			"Where to store the subreddit",
 			value.PathSlice,
 			flag.Alias("-sd"),
 			flag.Default(".", "."),
@@ -49,8 +49,8 @@ func main() {
 			flag.Required(),
 		),
 		command.Flag(
-			flag.Name("--subreddit-timeframe"),
-			flag.HelpShort("Take the top subreddits from this timeframe"),
+			"--subreddit-timeframe",
+			"Take the top subreddits from this timeframe",
 			// TODO: this should be a StringEnumSlice once that's implemented
 			value.StringSlice,
 			flag.Alias("-st"),
@@ -59,8 +59,8 @@ func main() {
 			flag.Required(),
 		),
 		command.Flag(
-			flag.Name("--subreddit-limit"),
-			flag.HelpShort("max number of links to try to download"),
+			"--subreddit-limit",
+			"max number of links to try to download",
 			value.IntSlice,
 			flag.Alias("-sl"),
 			flag.Default("2", "3"),
@@ -70,67 +70,66 @@ func main() {
 	)
 
 	app := warg.New(
-		"grabbit",
 		section.New(
-			section.HelpShort("Get top images from subreddits"),
+			"Get top images from subreddits",
 			section.ExistingCommand(
-				command.Name("grab"),
+				"grab",
 				grabCmd,
 			),
 			section.Footer(appFooter),
 			section.Command(
-				command.Name("version"),
-				command.HelpShort("Print version"),
+				"version",
+				"Print version",
 				printVersion,
 			),
 			section.Flag(
-				flag.Name("--color"),
-				flag.HelpShort("Use colorized output"),
+				"--color",
+				"Use colorized output",
 				value.StringEnum("true", "false", "auto"),
 				flag.Default("auto"),
 			),
 			section.Flag(
-				flag.Name("--log-filename"),
-				flag.HelpShort("log filename"),
+				"--log-filename",
+				"log filename",
 				value.Path,
 				flag.Default("~/.config/grabbit.jsonl"),
 				flag.ConfigPath("lumberjacklogger.filename"),
 				flag.Required(),
 			),
 			section.Flag(
-				flag.Name("--log-maxage"),
-				flag.HelpShort("max age before log rotation in days"),
+				"--log-maxage",
+				"max age before log rotation in days",
 				value.Int,
 				flag.Default("30"),
 				flag.ConfigPath("lumberjacklogger.maxage"),
 				flag.Required(),
 			),
 			section.Flag(
-				flag.Name("--log-maxbackups"),
-				flag.HelpShort("num backups for the log"),
+				"--log-maxbackups",
+				"num backups for the log",
 				value.Int,
 				flag.Default("0"),
 				flag.ConfigPath("lumberjacklogger.maxbackups"),
 				flag.Required(),
 			),
 			section.Flag(
-				flag.Name("--log-maxsize"),
-				flag.HelpShort("max size of log in megabytes"),
+				"--log-maxsize",
+				"max size of log in megabytes",
 				value.Int,
 				flag.Default("5"),
 				flag.ConfigPath("lumberjacklogger.maxsize"),
 				flag.Required(),
 			),
 			section.Section(
-				section.Name("config"),
-				section.HelpShort("Config commands"),
+				"config",
+				"Config commands",
 				section.Command(
-					command.Name("edit"),
-					command.HelpShort("Edit or create configuration file."),
+					"edit",
+					"Edit or create configuration file.",
 					editConfig,
 					command.Flag(
-						flag.Name("--editor"),
-						flag.HelpShort("path to editor"),
+						"--editor",
+						"path to editor",
 						value.String,
 						flag.Alias("-e"),
 						flag.Default("vi"),
@@ -141,12 +140,17 @@ func main() {
 			),
 		),
 		warg.ConfigFlag(
-			flag.Name("--config"),
+			"--config",
 			yamlreader.New,
 			"config filepath",
 			flag.Alias("-c"),
 			flag.Default("~/.config/grabbit.yaml"),
 		),
+		warg.SkipValidation(),
 	)
-	app.MustRun(os.Args, os.LookupEnv)
+	return &app
+}
+
+func main() {
+	app().MustRun(os.Args, os.LookupEnv)
 }
