@@ -240,6 +240,8 @@ func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Cli
 
 func grab(passedFlags flag.PassedFlags) error {
 
+	timeout := passedFlags["--timeout"].(time.Duration)
+
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:   passedFlags["--log-filename"].(string),
@@ -304,7 +306,41 @@ func grab(passedFlags flag.PassedFlags) error {
 	}
 
 	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (go.bbkane.com/grabbit)"
-	client, err := reddit.NewReadonlyClient(reddit.WithUserAgent(ua))
+
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+
+	// The reddit API does not like HTTP/2
+	// Per https://pkg.go.dev/net/http?utm_source=gopls#pkg-overview ,
+	// I'm copying http.DefaultTransport and replacing the HTTP/2 stuff
+	transport := &http.Transport{
+		Proxy:       http.ProxyFromEnvironment,
+		DialContext: dialer.DialContext,
+
+		// change from default
+		ForceAttemptHTTP2: false,
+
+		MaxIdleConns:        100,
+		IdleConnTimeout:     90 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+
+		// use an empty map instead of nil per the link above
+		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	httpClient := &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
+
+	client, err := reddit.NewReadonlyClient(
+		reddit.WithUserAgent(ua),
+		reddit.WithHTTPClient(httpClient),
+	)
 	if err != nil {
 		err = errors.WithStack(err)
 		logger.Errorw(

@@ -32,7 +32,7 @@ func app() *warg.App {
 		grab,
 		command.Flag(
 			"--subreddit-name",
-			"subreddit to grab",
+			"Subreddit to grab",
 			value.StringSlice,
 			flag.Alias("-sn"),
 			flag.Default("earthporn", "wallpapers"),
@@ -60,11 +60,19 @@ func app() *warg.App {
 		),
 		command.Flag(
 			"--subreddit-limit",
-			"max number of links to try to download",
+			"Max number of links to try to download",
 			value.IntSlice,
 			flag.Alias("-sl"),
 			flag.Default("2", "3"),
 			flag.ConfigPath("subreddits[].limit"),
+			flag.Required(),
+		),
+		command.Flag(
+			"--timeout",
+			"Timeout for a single download",
+			value.Duration,
+			flag.Alias("-t"),
+			flag.Default("30s"),
 			flag.Required(),
 		),
 	)
@@ -90,7 +98,7 @@ func app() *warg.App {
 			),
 			section.Flag(
 				"--log-filename",
-				"log filename",
+				"Log filename",
 				value.Path,
 				flag.Default("~/.config/grabbit.jsonl"),
 				flag.ConfigPath("lumberjacklogger.filename"),
@@ -98,7 +106,7 @@ func app() *warg.App {
 			),
 			section.Flag(
 				"--log-maxage",
-				"max age before log rotation in days",
+				"Max age before log rotation in days",
 				value.Int,
 				flag.Default("30"),
 				flag.ConfigPath("lumberjacklogger.maxage"),
@@ -106,7 +114,7 @@ func app() *warg.App {
 			),
 			section.Flag(
 				"--log-maxbackups",
-				"num backups for the log",
+				"Num backups for the log",
 				value.Int,
 				flag.Default("0"),
 				flag.ConfigPath("lumberjacklogger.maxbackups"),
@@ -114,7 +122,7 @@ func app() *warg.App {
 			),
 			section.Flag(
 				"--log-maxsize",
-				"max size of log in megabytes",
+				"Max size of log in megabytes",
 				value.Int,
 				flag.Default("5"),
 				flag.ConfigPath("lumberjacklogger.maxsize"),
@@ -129,7 +137,7 @@ func app() *warg.App {
 					editConfig,
 					command.Flag(
 						"--editor",
-						"path to editor",
+						"Path to editor",
 						value.String,
 						flag.Alias("-e"),
 						flag.Default("vi"),
@@ -142,7 +150,7 @@ func app() *warg.App {
 		warg.ConfigFlag(
 			"--config",
 			yamlreader.New,
-			"config filepath",
+			"Config filepath",
 			flag.Alias("-c"),
 			flag.Default("~/.config/grabbit.yaml"),
 		),
