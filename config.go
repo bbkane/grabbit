@@ -6,7 +6,7 @@ import (
 
 	"github.com/bbkane/glib"
 	"go.bbkane.com/logos"
-	"go.bbkane.com/warg/flag"
+	"go.bbkane.com/warg/command"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -14,13 +14,13 @@ import (
 //go:embed embedded/grabbit.yaml
 var embeddedConfig []byte
 
-func editConfig(passedFlags flag.PassedFlags) error {
+func editConfig(ctx command.Context) error {
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   passedFlags["--log-filename"].(string),
-		MaxAge:     passedFlags["--log-maxage"].(int),
-		MaxBackups: passedFlags["--log-maxbackups"].(int),
-		MaxSize:    passedFlags["--log-maxsize"].(int),
+		Filename:   ctx.Flags["--log-filename"].(string),
+		MaxAge:     ctx.Flags["--log-maxage"].(int),
+		MaxBackups: ctx.Flags["--log-maxbackups"].(int),
+		MaxSize:    ctx.Flags["--log-maxsize"].(int),
 	}
 
 	logger := logos.NewLogger(
@@ -31,7 +31,7 @@ func editConfig(passedFlags flag.PassedFlags) error {
 	defer logger.Sync()
 	logger.LogOnPanic()
 
-	configPath, configPathExists := passedFlags["--config"].(string)
+	configPath, configPathExists := ctx.Flags["--config"].(string)
 	if !configPathExists {
 		err := errors.New("must path --config")
 		logos.Errorw(
@@ -40,7 +40,7 @@ func editConfig(passedFlags flag.PassedFlags) error {
 		)
 		return err
 	}
-	editor := passedFlags["--editor"].(string)
+	editor := ctx.Flags["--editor"].(string)
 
 	err := glib.EditFile(embeddedConfig, configPath, editor)
 	if err != nil {

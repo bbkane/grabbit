@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/v2/reddit"
 	"go.bbkane.com/logos"
-	"go.bbkane.com/warg/flag"
+	"go.bbkane.com/warg/command"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -238,16 +238,16 @@ func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Cli
 	}
 }
 
-func grab(passedFlags flag.PassedFlags) error {
+func grab(ctx command.Context) error {
 
-	timeout := passedFlags["--timeout"].(time.Duration)
+	timeout := ctx.Flags["--timeout"].(time.Duration)
 
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   passedFlags["--log-filename"].(string),
-		MaxAge:     passedFlags["--log-maxage"].(int),
-		MaxBackups: passedFlags["--log-maxbackups"].(int),
-		MaxSize:    passedFlags["--log-maxsize"].(int),
+		Filename:   ctx.Flags["--log-filename"].(string),
+		MaxAge:     ctx.Flags["--log-maxage"].(int),
+		MaxBackups: ctx.Flags["--log-maxbackups"].(int),
+		MaxSize:    ctx.Flags["--log-maxsize"].(int),
 	}
 
 	logger := logos.NewLogger(
@@ -258,10 +258,10 @@ func grab(passedFlags flag.PassedFlags) error {
 	defer logger.Sync()
 	logger.LogOnPanic()
 
-	subredditDestinations := passedFlags["--subreddit-destination"].([]string)
-	subredditLimits := passedFlags["--subreddit-limit"].([]int)
-	subredditNames := passedFlags["--subreddit-name"].([]string)
-	subredditTimeframes := passedFlags["--subreddit-timeframe"].([]string)
+	subredditDestinations := ctx.Flags["--subreddit-destination"].([]string)
+	subredditLimits := ctx.Flags["--subreddit-limit"].([]int)
+	subredditNames := ctx.Flags["--subreddit-name"].([]string)
+	subredditTimeframes := ctx.Flags["--subreddit-timeframe"].([]string)
 
 	if !(len(subredditDestinations) == len(subredditLimits) &&
 		len(subredditLimits) == len(subredditNames) &&
@@ -307,17 +307,15 @@ func grab(passedFlags flag.PassedFlags) error {
 
 	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (go.bbkane.com/grabbit)"
 
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}
-
 	// The reddit API does not like HTTP/2
 	// Per https://pkg.go.dev/net/http?utm_source=gopls#pkg-overview ,
 	// I'm copying http.DefaultTransport and replacing the HTTP/2 stuff
 	transport := &http.Transport{
-		Proxy:       http.ProxyFromEnvironment,
-		DialContext: dialer.DialContext,
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
 
 		// change from default
 		ForceAttemptHTTP2: false,
@@ -350,10 +348,10 @@ func grab(passedFlags flag.PassedFlags) error {
 		return err
 	}
 
-	ctx := context.Background()
+	timeoutCtx := context.Background()
 
 	for i := 0; i < len(subredditDestinations); i++ {
-		grabSubreddit(ctx, logger, client, subreddit{
+		grabSubreddit(timeoutCtx, logger, client, subreddit{
 			Name:        subredditNames[i],
 			Destination: subredditDestinations[i],
 			Timeframe:   subredditTimeframes[i],
