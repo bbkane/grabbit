@@ -26,6 +26,8 @@ func app() *warg.App {
 
   # Grab from config file
   grabbit grab
+
+Homepage: https://github.com/bbkane/grabbit
 `
 	grabCmd := command.New(
 		"Grab images. Optionally use `config edit` first to create a config",
@@ -51,8 +53,7 @@ func app() *warg.App {
 		command.Flag(
 			"--subreddit-timeframe",
 			"Take the top subreddits from this timeframe",
-			// TODO: this should be a StringEnumSlice once that's implemented
-			value.StringSlice,
+			value.StringEnumSlice("day", "week", "month", "year", "all"),
 			flag.Alias("-st"),
 			flag.Default("week", "week"),
 			flag.ConfigPath("subreddits[].timeframe"),
