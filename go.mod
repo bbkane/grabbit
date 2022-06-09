@@ -2,9 +2,6 @@ module go.bbkane.com/grabbit/v4
 
 go 1.18
 
-// Useful for local development
-// replace go.bbkane.com/warg => /Users/bbkane/Git/warg
-
 require (
 	github.com/bbkane/glib v0.1.1
 	github.com/pkg/errors v0.9.1
