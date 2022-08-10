@@ -90,3 +90,7 @@ scoop:
     owner: bbkane
     name: scoop-bucket
     token: "{{ .Env.KEY_GITHUB_GORELEASER_TO_HOMEBREW_TAP }}"
+  description: "A small single-binary CLI to grab images from Reddit"
+  homepage: "https://github.com/bbkane/grabbit"
+  license: MIT
+
