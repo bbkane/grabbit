@@ -10,7 +10,14 @@ See my [personal config](https://github.com/bbkane/dotfiles/blob/master/grabbit/
 
 ## Install
 
-- Homebrew: `brew install bbkane/tap/grabbit`
+- [Homebrew](https://brew.sh/): `brew install bbkane/tap/grabbit`
+- [Scoop](https://scoop.sh/):
+
+```
+scoop bucket add bbkane https://github.com/bbkane/scoop-bucket
+scoop install bbkane/grabbit
+```
+
 - Download Mac/Linux/Windows executable: [GitHub releases](https://github.com/bbkane/grabbit/releases)
 - Go: `go install go.bbkane.com/grabbit/v4@latest`
 - Build with [goreleaser](https://goreleaser.com/) after cloning: `goreleaser --snapshot --skip-publish --rm-dist`

@@ -6,6 +6,7 @@ before:
     - go mod download
     # you may remove this if you don't need go generate
     # - go generate ./...
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -26,6 +27,7 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
 # https://goreleaser.com/customization/homebrew/
 brews:
   - tap:
@@ -81,3 +83,10 @@ brews:
       </dict>
 
       </plist>
+
+# https://goreleaser.com/customization/scoop/
+scoop:
+  bucket:
+    owner: bbkane
+    name: scoop-bucket
+    token: "{{ .Env.KEY_GITHUB_GORELEASER_TO_HOMEBREW_TAP }}"
