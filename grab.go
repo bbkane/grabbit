@@ -157,7 +157,9 @@ func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Cli
 		ctx,
 		subreddit.Name, &reddit.ListPostOptions{
 			ListOptions: reddit.ListOptions{
-				Limit: subreddit.Limit,
+				Limit:  subreddit.Limit,
+				After:  "",
+				Before: "",
 			},
 			Time: subreddit.Timeframe,
 		})
@@ -248,6 +250,8 @@ func grab(ctx command.Context) error {
 		MaxAge:     ctx.Flags["--log-maxage"].(int),
 		MaxBackups: ctx.Flags["--log-maxbackups"].(int),
 		MaxSize:    ctx.Flags["--log-maxsize"].(int),
+		LocalTime:  true,
+		Compress:   false,
 	}
 
 	logger := logos.NewLogger(
@@ -279,7 +283,17 @@ func grab(ctx command.Context) error {
 	// Test connection
 	{
 		conn, err := tls.DialWithDialer(
-			&net.Dialer{Timeout: time.Second * 30},
+			&net.Dialer{
+				Timeout:       time.Second * 30,
+				Deadline:      time.Time{},
+				LocalAddr:     nil,
+				DualStack:     false,
+				FallbackDelay: 0,
+				KeepAlive:     0,
+				Resolver:      nil,
+				Cancel:        nil,
+				Control:       nil,
+			},
 			"tcp",
 			net.JoinHostPort("reddit.com", "443"),
 			nil,
@@ -311,10 +325,31 @@ func grab(ctx command.Context) error {
 	// Per https://pkg.go.dev/net/http?utm_source=gopls#pkg-overview ,
 	// I'm copying http.DefaultTransport and replacing the HTTP/2 stuff
 	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Dial:                   nil,
+		DialTLSContext:         nil,
+		DialTLS:                nil,
+		TLSClientConfig:        nil,
+		DisableKeepAlives:      false,
+		DisableCompression:     false,
+		MaxIdleConnsPerHost:    0,
+		MaxConnsPerHost:        0,
+		ResponseHeaderTimeout:  0,
+		ProxyConnectHeader:     nil,
+		GetProxyConnectHeader:  nil,
+		MaxResponseHeaderBytes: 0,
+		WriteBufferSize:        0,
+		ReadBufferSize:         0,
+		Proxy:                  http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:       30 * time.Second,
+			KeepAlive:     30 * time.Second,
+			Deadline:      time.Time{},
+			LocalAddr:     nil,
+			DualStack:     false,
+			FallbackDelay: 0,
+			Resolver:      nil,
+			Cancel:        nil,
+			Control:       nil,
 		}).DialContext,
 
 		// change from default
@@ -331,8 +366,10 @@ func grab(ctx command.Context) error {
 	}
 
 	httpClient := &http.Client{
-		Timeout:   timeout,
-		Transport: transport,
+		Timeout:       timeout,
+		Transport:     transport,
+		CheckRedirect: nil,
+		Jar:           nil,
 	}
 
 	client, err := reddit.NewReadonlyClient(

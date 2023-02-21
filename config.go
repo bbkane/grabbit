@@ -21,6 +21,8 @@ func editConfig(ctx command.Context) error {
 		MaxAge:     ctx.Flags["--log-maxage"].(int),
 		MaxBackups: ctx.Flags["--log-maxbackups"].(int),
 		MaxSize:    ctx.Flags["--log-maxsize"].(int),
+		LocalTime:  true,
+		Compress:   false,
 	}
 
 	logger := logos.NewLogger(

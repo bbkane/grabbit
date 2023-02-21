@@ -1,0 +1,24 @@
+linters:
+  disable-all: false
+  enable:
+    # defaults
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    # stuff I'm adding
+    - exhaustive
+    - exhaustruct
+    - gochecknoglobals
+    - gochecknoinits
+    - gofmt
+    - nonamedreturns
+    - predeclared
+  fast: false
+linters-settings:
+  errcheck:
+    exclude-functions:
+      - (*go.bbkane.com/logos.Logger).Sync
