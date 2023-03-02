@@ -1,6 +1,6 @@
 module go.bbkane.com/grabbit/v4
 
-go 1.18
+go 1.20
 
 require (
 	github.com/bbkane/glib v0.1.1
