@@ -142,7 +142,9 @@ func validateImageURL(fullURL string) (string, error) {
 	return "", errors.Errorf("urlFileName doesn't end in allowed extension: %#v , %#v\n ", urlFileName, allowedImageExtensions)
 }
 
-func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logger, sr subreddit) ([]*reddit.Post, error) {
+// getTopPosts retrieves the top posts for a given subreddit and returns them as an array of `reddit.Post` pointers.
+// Set baseURL to a non-empty string to override where the HTTP requests go, useful for tests
+func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logger, sr subreddit, baseURL string) ([]*reddit.Post, error) {
 
 	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (go.bbkane.com/grabbit)"
 
@@ -199,12 +201,23 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 		Jar:           nil,
 	}
 
-	client, err := reddit.NewReadonlyClient(
-		reddit.WithUserAgent(ua),
-		reddit.WithHTTPClient(httpClient),
-	)
-	if err != nil {
-		err = errors.WithStack(err)
+	var client *reddit.Client
+	var redditErr error
+	if baseURL == "" {
+		client, redditErr = reddit.NewReadonlyClient(
+			reddit.WithUserAgent(ua),
+			reddit.WithHTTPClient(httpClient),
+		)
+	} else {
+		client, redditErr = reddit.NewReadonlyClient(
+			reddit.WithBaseURL(baseURL),
+			reddit.WithUserAgent(ua),
+			reddit.WithHTTPClient(httpClient),
+		)
+	}
+
+	if redditErr != nil {
+		err := errors.WithStack(redditErr)
 		logger.Errorw(
 			"reddit initializion error",
 			"err", err,
@@ -401,7 +414,7 @@ func grab(ctx command.Context) error {
 			continue
 		}
 
-		posts, err := getTopPosts(timeoutCtx, timeout, logger, sr)
+		posts, err := getTopPosts(timeoutCtx, timeout, logger, sr, "")
 		if err != nil {
 			// not fatal, we can continue with other subreddits
 			logger.Errorw(
