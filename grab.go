@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -141,38 +142,91 @@ func validateImageURL(fullURL string) (string, error) {
 	return "", errors.Errorf("urlFileName doesn't end in allowed extension: %#v , %#v\n ", urlFileName, allowedImageExtensions)
 }
 
-func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Client, subreddit subreddit) {
+func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logger, sr subreddit) ([]*reddit.Post, error) {
 
-	_, err := glib.ValidateDirectory(subreddit.Destination)
-	if err != nil {
-		logger.Errorw(
-			"Directory error",
-			"directory", subreddit.Destination,
-			"err", err,
-		)
-		return
+	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (go.bbkane.com/grabbit)"
+
+	// The reddit API does not like HTTP/2
+	// Per https://pkg.go.dev/net/http?utm_source=gopls#pkg-overview ,
+	// I'm copying http.DefaultTransport and replacing the HTTP/2 stuff
+	transport := &http.Transport{
+		Dial:                   nil,
+		DialTLSContext:         nil,
+		DialTLS:                nil,
+		TLSClientConfig:        nil,
+		DisableKeepAlives:      false,
+		DisableCompression:     false,
+		MaxIdleConnsPerHost:    0,
+		MaxConnsPerHost:        0,
+		ResponseHeaderTimeout:  0,
+		ProxyConnectHeader:     nil,
+		GetProxyConnectHeader:  nil,
+		MaxResponseHeaderBytes: 0,
+		WriteBufferSize:        0,
+		ReadBufferSize:         0,
+		Proxy:                  http.ProxyFromEnvironment,
+		OnProxyConnectResponse: nil,
+		DialContext: (&net.Dialer{
+			Timeout:        30 * time.Second,
+			KeepAlive:      30 * time.Second,
+			Deadline:       time.Time{},
+			LocalAddr:      nil,
+			DualStack:      false,
+			FallbackDelay:  0,
+			Resolver:       nil,
+			Cancel:         nil,
+			Control:        nil,
+			ControlContext: nil,
+		}).DialContext,
+
+		// change from default
+		ForceAttemptHTTP2: false,
+
+		MaxIdleConns:        100,
+		IdleConnTimeout:     90 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+
+		// use an empty map instead of nil per the link above
+		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+
+		ExpectContinueTimeout: 1 * time.Second,
 	}
 
+	httpClient := &http.Client{
+		Timeout:       timeout,
+		Transport:     transport,
+		CheckRedirect: nil,
+		Jar:           nil,
+	}
+
+	client, err := reddit.NewReadonlyClient(
+		reddit.WithUserAgent(ua),
+		reddit.WithHTTPClient(httpClient),
+	)
+	if err != nil {
+		err = errors.WithStack(err)
+		logger.Errorw(
+			"reddit initializion error",
+			"err", err,
+		)
+		return nil, err
+	}
+
+	// actually get the posts
 	posts, _, err := client.Subreddit.TopPosts(
 		ctx,
-		subreddit.Name, &reddit.ListPostOptions{
+		sr.Name, &reddit.ListPostOptions{
 			ListOptions: reddit.ListOptions{
-				Limit:  subreddit.Limit,
+				Limit:  sr.Limit,
 				After:  "",
 				Before: "",
 			},
-			Time: subreddit.Timeframe,
+			Time: sr.Timeframe,
 		})
+	return posts, err
+}
 
-	if err != nil {
-		// not fatal, we can continue with other subreddits
-		logger.Errorw(
-			"Can't use subreddit",
-			"subreddit", subreddit.Name,
-			"err", errors.WithStack(err),
-		)
-		return
-	}
+func grabSubreddit(ctx context.Context, logger *logos.Logger, subreddit subreddit, posts []*reddit.Post) {
 
 	for _, post := range posts {
 		if post.NSFW {
@@ -240,6 +294,47 @@ func grabSubreddit(ctx context.Context, logger *logos.Logger, client *reddit.Cli
 	}
 }
 
+func testRedditConnection(logger *logos.Logger) error {
+	// Test connection
+	conn, err := tls.DialWithDialer(
+		&net.Dialer{
+			Timeout:        time.Second * 30,
+			Deadline:       time.Time{},
+			LocalAddr:      nil,
+			DualStack:      false,
+			FallbackDelay:  0,
+			KeepAlive:      0,
+			Resolver:       nil,
+			Cancel:         nil,
+			Control:        nil,
+			ControlContext: nil,
+		},
+		"tcp",
+		net.JoinHostPort("reddit.com", "443"),
+		nil,
+	)
+	if err != nil {
+		err = errors.WithStack(err)
+		logger.Errorw(
+			"Can't connect to reddit",
+			"conn", conn,
+			"err", err,
+		)
+		return err
+	}
+	err = conn.Close()
+	if err != nil {
+		err = errors.WithStack(err)
+		logger.Errorw(
+			"Can't close connection",
+			"conn", conn,
+			"err", err,
+		)
+		return err
+	}
+	return nil
+}
+
 func grab(ctx command.Context) error {
 
 	timeout := ctx.Flags["--timeout"].(time.Duration)
@@ -280,123 +375,44 @@ func grab(ctx command.Context) error {
 		return errors.New("Non-matching lengths")
 	}
 
-	// Test connection
-	{
-		conn, err := tls.DialWithDialer(
-			&net.Dialer{
-				Timeout:        time.Second * 30,
-				Deadline:       time.Time{},
-				LocalAddr:      nil,
-				DualStack:      false,
-				FallbackDelay:  0,
-				KeepAlive:      0,
-				Resolver:       nil,
-				Cancel:         nil,
-				Control:        nil,
-				ControlContext: nil,
-			},
-			"tcp",
-			net.JoinHostPort("reddit.com", "443"),
-			nil,
-		)
-		if err != nil {
-			err = errors.WithStack(err)
-			logger.Errorw(
-				"Can't connect to reddit",
-				"conn", conn,
-				"err", err,
-			)
-			return err
-		}
-		err = conn.Close()
-		if err != nil {
-			err = errors.WithStack(err)
-			logger.Errorw(
-				"Can't close connection",
-				"conn", conn,
-				"err", err,
-			)
-			return err
-		}
-	}
-
-	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (go.bbkane.com/grabbit)"
-
-	// The reddit API does not like HTTP/2
-	// Per https://pkg.go.dev/net/http?utm_source=gopls#pkg-overview ,
-	// I'm copying http.DefaultTransport and replacing the HTTP/2 stuff
-	transport := &http.Transport{
-		Dial:                   nil,
-		DialTLSContext:         nil,
-		DialTLS:                nil,
-		TLSClientConfig:        nil,
-		DisableKeepAlives:      false,
-		DisableCompression:     false,
-		MaxIdleConnsPerHost:    0,
-		MaxConnsPerHost:        0,
-		ResponseHeaderTimeout:  0,
-		ProxyConnectHeader:     nil,
-		GetProxyConnectHeader:  nil,
-		MaxResponseHeaderBytes: 0,
-		WriteBufferSize:        0,
-		ReadBufferSize:         0,
-		Proxy:                  http.ProxyFromEnvironment,
-		OnProxyConnectResponse: nil,
-		DialContext: (&net.Dialer{
-			Timeout:        30 * time.Second,
-			KeepAlive:      30 * time.Second,
-			Deadline:       time.Time{},
-			LocalAddr:      nil,
-			DualStack:      false,
-			FallbackDelay:  0,
-			Resolver:       nil,
-			Cancel:         nil,
-			Control:        nil,
-			ControlContext: nil,
-		}).DialContext,
-
-		// change from default
-		ForceAttemptHTTP2: false,
-
-		MaxIdleConns:        100,
-		IdleConnTimeout:     90 * time.Second,
-		TLSHandshakeTimeout: 10 * time.Second,
-
-		// use an empty map instead of nil per the link above
-		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
-
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	httpClient := &http.Client{
-		Timeout:       timeout,
-		Transport:     transport,
-		CheckRedirect: nil,
-		Jar:           nil,
-	}
-
-	client, err := reddit.NewReadonlyClient(
-		reddit.WithUserAgent(ua),
-		reddit.WithHTTPClient(httpClient),
-	)
+	err := testRedditConnection(logger)
 	if err != nil {
-		err = errors.WithStack(err)
-		logger.Errorw(
-			"reddit initializion error",
-			"err", err,
-		)
-		return err
+		return fmt.Errorf("Cannot connect to reddit: %w", err)
 	}
 
 	timeoutCtx := context.Background()
 
 	for i := 0; i < len(subredditDestinations); i++ {
-		grabSubreddit(timeoutCtx, logger, client, subreddit{
+
+		sr := subreddit{
 			Name:        subredditNames[i],
 			Destination: subredditDestinations[i],
 			Timeframe:   subredditTimeframes[i],
 			Limit:       subredditLimits[i],
-		})
+		}
+
+		_, err := glib.ValidateDirectory(sr.Destination)
+		if err != nil {
+			logger.Errorw(
+				"Directory error",
+				"directory", sr.Destination,
+				"err", err,
+			)
+			continue
+		}
+
+		posts, err := getTopPosts(timeoutCtx, timeout, logger, sr)
+		if err != nil {
+			// not fatal, we can continue with other subreddits
+			logger.Errorw(
+				"Can't use subreddit",
+				"subreddit", sr.Name,
+				"err", errors.WithStack(err),
+			)
+			continue
+		}
+
+		grabSubreddit(timeoutCtx, logger, sr, posts)
 	}
 	return nil
 }
