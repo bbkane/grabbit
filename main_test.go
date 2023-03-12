@@ -4,8 +4,10 @@ import (
 	"testing"
 )
 
-func TestBuildApp(t *testing.T) {
-	if err := app().Validate(); err != nil {
+func TestApp_Validate(t *testing.T) {
+	app := app()
+
+	if err := app.Validate(); err != nil {
 		t.Fatal(err)
 	}
 }

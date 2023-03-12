@@ -19,6 +19,7 @@ import (
 	"github.com/vartanbeno/go-reddit/v2/reddit"
 	"go.bbkane.com/logos"
 	"go.bbkane.com/warg/command"
+	"go.bbkane.com/warg/help/common"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -146,7 +147,7 @@ func validateImageURL(fullURL string) (string, error) {
 // Set baseURL to a non-empty string to override where the HTTP requests go, useful for tests
 func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logger, sr subreddit, baseURL string) ([]*reddit.Post, error) {
 
-	ua := runtime.GOOS + ":" + "grabbit" + ":" + getVersion() + " (go.bbkane.com/grabbit)"
+	ua := runtime.GOOS + ":" + "grabbit" + ":" + version + " (go.bbkane.com/grabbit)"
 
 	// The reddit API does not like HTTP/2
 	// Per https://pkg.go.dev/net/http?utm_source=gopls#pkg-overview ,
@@ -362,11 +363,13 @@ func grab(ctx command.Context) error {
 		Compress:   false,
 	}
 
-	logger := logos.NewLogger(
-		logos.NewZapSugaredLogger(
-			lumberJackLogger, zap.DebugLevel, getVersion(),
-		),
-	)
+	color, err := common.ConditionallyEnableColor(ctx.Flags, os.Stdout)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error enabling color, continuing without: %s", err.Error())
+	}
+
+	zapLogger := logos.NewBBKaneZapLogger(lumberJackLogger, zap.DebugLevel, version)
+	logger := logos.New(zapLogger, color)
 	defer logger.Sync()
 	logger.LogOnPanic()
 
@@ -388,7 +391,7 @@ func grab(ctx command.Context) error {
 		return errors.New("Non-matching lengths")
 	}
 
-	err := testRedditConnection(logger)
+	err = testRedditConnection(logger)
 	if err != nil {
 		return fmt.Errorf("Cannot connect to reddit: %w", err)
 	}

@@ -2,13 +2,15 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"go.bbkane.com/warg"
 	"go.bbkane.com/warg/command"
 	"go.bbkane.com/warg/config/yamlreader"
 	"go.bbkane.com/warg/flag"
 	"go.bbkane.com/warg/section"
-	"go.bbkane.com/warg/value"
+	"go.bbkane.com/warg/value/scalar"
+	"go.bbkane.com/warg/value/slice"
 )
 
 func app() *warg.App {
@@ -35,45 +37,51 @@ Homepage: https://github.com/bbkane/grabbit
 		command.Flag(
 			"--subreddit-name",
 			"Subreddit to grab",
-			value.StringSlice,
+			slice.String(
+				slice.Default([]string{"earthporn", "wallpapers"}),
+			),
 			flag.Alias("-sn"),
-			flag.Default("earthporn", "wallpapers"),
 			flag.ConfigPath("subreddits[].name"),
 			flag.Required(),
 		),
 		command.Flag(
 			"--subreddit-destination",
 			"Where to store the subreddit",
-			value.PathSlice,
+			slice.Path(
+				slice.Default([]string{".", "."}),
+			),
 			flag.Alias("-sd"),
-			flag.Default(".", "."),
 			flag.ConfigPath("subreddits[].destination"),
 			flag.Required(),
 		),
 		command.Flag(
 			"--subreddit-timeframe",
 			"Take the top subreddits from this timeframe",
-			value.StringEnumSlice("day", "week", "month", "year", "all"),
+			slice.String(
+				slice.Choices("day", "week", "month", "year", "all"),
+				slice.Default([]string{"week", "week"}),
+			),
 			flag.Alias("-st"),
-			flag.Default("week", "week"),
 			flag.ConfigPath("subreddits[].timeframe"),
 			flag.Required(),
 		),
 		command.Flag(
 			"--subreddit-limit",
 			"Max number of links to try to download",
-			value.IntSlice,
+			slice.Int(
+				slice.Default([]int{2, 3}),
+			),
 			flag.Alias("-sl"),
-			flag.Default("2", "3"),
 			flag.ConfigPath("subreddits[].limit"),
 			flag.Required(),
 		),
 		command.Flag(
 			"--timeout",
 			"Timeout for a single download",
-			value.Duration,
+			scalar.Duration(
+				scalar.Default(time.Second*30),
+			),
 			flag.Alias("-t"),
-			flag.Default("30s"),
 			flag.Required(),
 		),
 	)
@@ -87,46 +95,39 @@ Homepage: https://github.com/bbkane/grabbit
 				grabCmd,
 			),
 			section.Footer(appFooter),
-			section.Command(
-				"version",
-				"Print version",
-				printVersion,
-			),
-			section.Flag(
-				"--color",
-				"Use colorized output",
-				value.StringEnum("true", "false", "auto"),
-				flag.Default("auto"),
-			),
 			section.Flag(
 				"--log-filename",
 				"Log filename",
-				value.Path,
-				flag.Default("~/.config/grabbit.jsonl"),
+				scalar.Path(
+					scalar.Default("~/.config/grabbit.jsonl"),
+				),
 				flag.ConfigPath("lumberjacklogger.filename"),
 				flag.Required(),
 			),
 			section.Flag(
 				"--log-maxage",
-				"Max age before log rotation in days",
-				value.Int,
-				flag.Default("30"),
+				"Max age before log rotation in days", // TODO: change to duration flag
+				scalar.Int(
+					scalar.Default(30),
+				),
 				flag.ConfigPath("lumberjacklogger.maxage"),
 				flag.Required(),
 			),
 			section.Flag(
 				"--log-maxbackups",
 				"Num backups for the log",
-				value.Int,
-				flag.Default("0"),
+				scalar.Int(
+					scalar.Default(0),
+				),
 				flag.ConfigPath("lumberjacklogger.maxbackups"),
 				flag.Required(),
 			),
 			section.Flag(
-				"--log-maxsize",
+				"--log-maxsize", // TODO: make bytesize package similar to time?
 				"Max size of log in megabytes",
-				value.Int,
-				flag.Default("5"),
+				scalar.Int(
+					scalar.Default(5),
+				),
 				flag.ConfigPath("lumberjacklogger.maxsize"),
 				flag.Required(),
 			),
@@ -140,9 +141,10 @@ Homepage: https://github.com/bbkane/grabbit
 					command.Flag(
 						"--editor",
 						"Path to editor",
-						value.String,
+						scalar.String(
+							scalar.Default("vi"),
+						),
 						flag.Alias("-e"),
-						flag.Default("vi"),
 						flag.EnvVars("EDITOR"),
 						flag.Required(),
 					),
@@ -151,11 +153,15 @@ Homepage: https://github.com/bbkane/grabbit
 		),
 		warg.ConfigFlag(
 			"--config",
+			[]scalar.ScalarOpt[string]{
+				scalar.Default("~/.config/grabbit.yaml"),
+			},
 			yamlreader.New,
 			"Config filepath",
 			flag.Alias("-c"),
-			flag.Default("~/.config/grabbit.yaml"),
 		),
+		warg.AddColorFlag(),
+		warg.AddVersionCommand(version),
 		warg.SkipValidation(),
 	)
 	return &app

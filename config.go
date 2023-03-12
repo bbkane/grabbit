@@ -3,10 +3,13 @@ package main
 import (
 	_ "embed"
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/bbkane/glib"
 	"go.bbkane.com/logos"
 	"go.bbkane.com/warg/command"
+	"go.bbkane.com/warg/help/common"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -25,18 +28,20 @@ func editConfig(ctx command.Context) error {
 		Compress:   false,
 	}
 
-	logger := logos.NewLogger(
-		logos.NewZapSugaredLogger(
-			lumberJackLogger, zap.DebugLevel, getVersion(),
-		),
-	)
+	color, err := common.ConditionallyEnableColor(ctx.Flags, os.Stdout)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error enabling color, continuing without: %s", err.Error())
+	}
+
+	zapLogger := logos.NewBBKaneZapLogger(lumberJackLogger, zap.DebugLevel, version)
+	logger := logos.New(zapLogger, color)
 	defer logger.Sync()
 	logger.LogOnPanic()
 
 	configPath, configPathExists := ctx.Flags["--config"].(string)
 	if !configPathExists {
 		err := errors.New("must path --config")
-		logos.Errorw(
+		logger.Errorw(
 			"Must pass --config",
 			"err", err,
 		)
@@ -44,9 +49,9 @@ func editConfig(ctx command.Context) error {
 	}
 	editor := ctx.Flags["--editor"].(string)
 
-	err := glib.EditFile(embeddedConfig, configPath, editor)
+	err = glib.EditFile(embeddedConfig, configPath, editor)
 	if err != nil {
-		logos.Errorw(
+		logger.Errorw(
 			"Unable to edit config",
 			"configPath", configPath,
 			"editorPath", editor,
