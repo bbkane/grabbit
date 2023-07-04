@@ -44,14 +44,14 @@ brews:
     homepage: "https://github.com/bbkane/grabbit"
     description: "Grab images from subreddits! Useful for getting interesting wallpapers"
 
-    # https://crontab.guru/#8_10_*_*_Mon
+    # https://crontab.guru/#8_10_*_*_1
     # https://docs.brew.sh/Formula-Cookbook#service-block-methods
     # https://goreleaser.com/customization/homebrew/
     # https://github.com/goreleaser/goreleaser/issues/3990
     service: |
       run [opt_bin/"grabbit", "grab"]
       run_type :cron
-      cron "8 21 * * Mon"
+      cron "8 21 * * 1"
 
 # https://goreleaser.com/customization/scoop/
 scoops:
