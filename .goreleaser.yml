@@ -30,7 +30,7 @@ changelog:
 
 # https://goreleaser.com/customization/homebrew/
 brews:
-  - tap:
+  - repository:
       owner: bbkane
       name: homebrew-tap
       # Optionally a token can be provided, if it differs from the token provided to GoReleaser
@@ -43,54 +43,22 @@ brews:
       See https://www.macworld.com/article/3140183/how-to-install-an-app-in-macos-sierra-thats-not-signed-by-a-developer.html to work around that
     homepage: "https://github.com/bbkane/grabbit"
     description: "Grab images from subreddits! Useful for getting interesting wallpapers"
-    plist: |
-      <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-      <plist version="1.0">
-      <dict>
 
-          <!-- Not sure these are necessary -->
-        <key>EnvironmentVariables</key>
-        <dict>
-          <key>PATH</key>
-          <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin</string>
-        </dict>
-
-        <key>Label</key>
-        <string>#{plist_name}</string>
-
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/grabbit</string>
-          <string>grab</string>
-        </array>
-
-        <key>RunAtLoad</key>
-        <true/>
-
-        <key>StartCalendarInterval</key>
-        <array>
-          <dict>
-            <key>Hour</key>
-            <integer>10</integer>
-            <key>Minute</key>
-            <integer>0</integer>
-            <!-- Monday is 1 -->
-            <key>Weekday</key>
-            <integer>1</integer>
-          </dict>
-        </array>
-      </dict>
-
-      </plist>
+    # https://crontab.guru/#8_10_*_*_Mon
+    # https://docs.brew.sh/Formula-Cookbook#service-block-methods
+    # https://goreleaser.com/customization/homebrew/
+    # https://github.com/goreleaser/goreleaser/issues/3990
+    service: |
+      run [opt_bin/"grabbit", "grab"]
+      run_type :cron
+      cron "8 21 * * Mon"
 
 # https://goreleaser.com/customization/scoop/
-scoop:
-  bucket:
-    owner: bbkane
-    name: scoop-bucket
-    token: "{{ .Env.KEY_GITHUB_GORELEASER_TO_HOMEBREW_TAP }}"
-  description: "A small single-binary CLI to grab images from Reddit"
-  homepage: "https://github.com/bbkane/grabbit"
-  license: MIT
-
+scoops:
+  - repository:
+      owner: bbkane
+      name: scoop-bucket
+      token: "{{ .Env.KEY_GITHUB_GORELEASER_TO_HOMEBREW_TAP }}"
+    description: "A small single-binary CLI to grab images from Reddit"
+    homepage: "https://github.com/bbkane/grabbit"
+    license: MIT
