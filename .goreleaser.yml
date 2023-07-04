@@ -51,7 +51,7 @@ brews:
     service: |
       run [opt_bin/"grabbit", "grab"]
       run_type :cron
-      cron "8 21 * * 1"
+      cron "8 10 * * 1"
 
 # https://goreleaser.com/customization/scoop/
 scoops:
