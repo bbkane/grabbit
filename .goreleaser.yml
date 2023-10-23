@@ -6,7 +6,6 @@ before:
     - go mod download
     # you may remove this if you don't need go generate
     # - go generate ./...
-
 builds:
   - env:
       - CGO_ENABLED=0
@@ -18,7 +17,7 @@ builds:
       - amd64
       # - i386  # does anyone care about i386?
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+      - -s -w -X main.version=v{{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
 checksum:
   name_template: "checksums.txt"
 changelog:
@@ -27,7 +26,6 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
-
 # https://goreleaser.com/customization/homebrew/
 brews:
   - repository:
@@ -43,7 +41,6 @@ brews:
       See https://www.macworld.com/article/3140183/how-to-install-an-app-in-macos-sierra-thats-not-signed-by-a-developer.html to work around that
     homepage: "https://github.com/bbkane/grabbit"
     description: "Grab images from subreddits! Useful for getting interesting wallpapers"
-
     # https://crontab.guru/#8_10_*_*_1
     # https://docs.brew.sh/Formula-Cookbook#service-block-methods
     # https://goreleaser.com/customization/homebrew/
@@ -52,7 +49,6 @@ brews:
       run [opt_bin/"grabbit", "grab"]
       run_type :cron
       cron "8 10 * * 1"
-
 # https://goreleaser.com/customization/scoop/
 scoops:
   - repository:
