@@ -1,15 +1,15 @@
 # make lumberjacklogger nil to not log to file
 lumberjacklogger:
   filename: ~/.config/grabbit.jsonl
-  maxsize: 5  # megabytes
+  maxage: 30 # days
   maxbackups: 0
-  maxage: 30  # days
+  maxsize: 5 # megabytes
 subreddits:
-  - name: earthporn
-    destination: ~/Pictures/grabbit
-    timeframe: "week"
+  - destination: ~/Pictures/grabbit
     limit: 5
-  - name: cityporn
-    destination: ~/Pictures/grabbit
-    timeframe: "week"
+    name: earthporn
+    timeframe: week
+  - destination: ~/Pictures/grabbit
     limit: 6
+    name: cityporn
+    timeframe: week
