@@ -1,16 +1,16 @@
-version: 2.0.0
 # make lumberjacklogger nil to not log to file
 lumberjacklogger:
   filename: ./tmp.log
-  maxsize: 5  # megabytes
+  maxage: 30 # days
   maxbackups: 0
-  maxage: 30  # days
+  maxsize: 5 # megabytes
 subreddits:
-  - name: earthporn
-    destination: ./tmp/grabbit
-    timeframe: "day"
+  - destination: ./tmp/grabbit
     limit: 1
-  - name: cityporn
-    destination: ./tmp/grabbit
-    timeframe: "day"
+    name: earthporn
+    timeframe: day
+  - destination: ./tmp/grabbit
     limit: 1
+    name: cityporn
+    timeframe: day
+version: 2.0.0
