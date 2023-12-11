@@ -370,7 +370,6 @@ func grab(ctx command.Context) error {
 
 	zapLogger := logos.NewBBKaneZapLogger(lumberJackLogger, zap.DebugLevel, version)
 	logger := logos.New(zapLogger, color)
-	defer logger.Sync()
 	logger.LogOnPanic()
 
 	subredditDestinations := ctx.Flags["--subreddit-destination"].([]string)
@@ -430,5 +429,11 @@ func grab(ctx command.Context) error {
 
 		grabSubreddit(timeoutCtx, logger, sr, posts)
 	}
+
+	err = logger.Sync()
+	if err != nil {
+		return fmt.Errorf("could not sync logger: %w", err)
+	}
+
 	return nil
 }

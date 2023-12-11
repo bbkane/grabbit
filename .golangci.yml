@@ -15,10 +15,7 @@ linters:
     - gochecknoglobals
     - gochecknoinits
     - gofmt
+    - goimports
     - nonamedreturns
     - predeclared
   fast: false
-linters-settings:
-  errcheck:
-    exclude-functions:
-      - (*go.bbkane.com/logos.Logger).Sync
