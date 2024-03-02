@@ -51,10 +51,4 @@ checksum:
   name_template: checksums.txt
 # https://goreleaser.com/customization/scoop/
 scoops:
-  - description: A small single-binary CLI to grab images from Reddit
-    homepage: https://github.com/bbkane/grabbit
-    license: MIT
-    repository:
-      name: scoop-bucket
-      owner: bbkane
-      token: '{{ .Env.KEY_GITHUB_GORELEASER_TO_HOMEBREW_TAP }}'
+  - repository: null
