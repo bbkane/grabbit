@@ -149,9 +149,6 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 
 	ua := runtime.GOOS + ":" + "grabbit" + ":" + version + " (go.bbkane.com/grabbit)"
 
-	// The reddit API does not like HTTP/2
-	// Per https://pkg.go.dev/net/http?utm_source=gopls#pkg-overview ,
-	// I'm copying http.DefaultTransport and replacing the HTTP/2 stuff
 	transport := &http.Transport{
 		Dial:                   nil,
 		DialTLSContext:         nil,
@@ -170,18 +167,12 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 		Proxy:                  http.ProxyFromEnvironment,
 		OnProxyConnectResponse: nil,
 		DialContext:            nil,
-
-		// change from default
-		ForceAttemptHTTP2: true,
-
-		MaxIdleConns:        100,
-		IdleConnTimeout:     90 * time.Second,
-		TLSHandshakeTimeout: 10 * time.Second,
-
-		// use an empty map instead of nil per the link above
-		TLSNextProto: nil,
-
-		ExpectContinueTimeout: 1 * time.Second,
+		ForceAttemptHTTP2:      true,
+		MaxIdleConns:           100,
+		IdleConnTimeout:        90 * time.Second,
+		TLSHandshakeTimeout:    10 * time.Second,
+		TLSNextProto:           nil,
+		ExpectContinueTimeout:  1 * time.Second,
 	}
 
 	httpClient := &http.Client{
