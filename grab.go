@@ -169,28 +169,17 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 		ReadBufferSize:         0,
 		Proxy:                  http.ProxyFromEnvironment,
 		OnProxyConnectResponse: nil,
-		DialContext: (&net.Dialer{
-			Timeout:        30 * time.Second,
-			KeepAlive:      30 * time.Second,
-			Deadline:       time.Time{},
-			LocalAddr:      nil,
-			DualStack:      false,
-			FallbackDelay:  0,
-			Resolver:       nil,
-			Cancel:         nil,
-			Control:        nil,
-			ControlContext: nil,
-		}).DialContext,
+		DialContext:            nil,
 
 		// change from default
-		ForceAttemptHTTP2: false,
+		ForceAttemptHTTP2: true,
 
 		MaxIdleConns:        100,
 		IdleConnTimeout:     90 * time.Second,
 		TLSHandshakeTimeout: 10 * time.Second,
 
 		// use an empty map instead of nil per the link above
-		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+		TLSNextProto: nil,
 
 		ExpectContinueTimeout: 1 * time.Second,
 	}
