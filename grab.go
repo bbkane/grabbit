@@ -167,12 +167,13 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 		Proxy:                  http.ProxyFromEnvironment,
 		OnProxyConnectResponse: nil,
 		DialContext:            nil,
-		ForceAttemptHTTP2:      true,
-		MaxIdleConns:           100,
-		IdleConnTimeout:        90 * time.Second,
-		TLSHandshakeTimeout:    10 * time.Second,
-		TLSNextProto:           nil,
-		ExpectContinueTimeout:  1 * time.Second,
+		// https://www.reddit.com/r/redditdev/comments/uncu00/comment/i8gyfmx/
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		TLSNextProto:          nil,
+		ExpectContinueTimeout: 1 * time.Second,
 	}
 
 	httpClient := &http.Client{
