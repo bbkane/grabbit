@@ -135,7 +135,7 @@ func validateImageURL(fullURL string) (string, error) {
 	urlFileName := segments[len(segments)-1]
 	allowedImageExtensions := []string{".jpg", ".jpeg", ".png"}
 	for _, suffix := range allowedImageExtensions {
-		if strings.HasSuffix(urlFileName, suffix) {
+		if strings.HasSuffix(strings.ToLower(urlFileName), suffix) {
 			return urlFileName, nil
 		}
 
