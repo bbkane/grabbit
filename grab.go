@@ -221,7 +221,7 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 	return posts, err
 }
 
-func grabSubreddit(ctx context.Context, logger *logos.Logger, subreddit subreddit, posts []*reddit.Post) {
+func grabSubreddit(logger *logos.Logger, subreddit subreddit, posts []*reddit.Post) {
 
 	for _, post := range posts {
 		if post.NSFW {
@@ -408,7 +408,7 @@ func grab(ctx command.Context) error {
 			continue
 		}
 
-		grabSubreddit(timeoutCtx, logger, sr, posts)
+		grabSubreddit(logger, sr, posts)
 	}
 
 	err = logger.Sync()

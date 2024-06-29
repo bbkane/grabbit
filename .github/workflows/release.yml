@@ -17,8 +17,7 @@ jobs:
           cache: true
           go-version-file: go.mod
       - name: Write Release Notes
-        # https://github.com/bbkane/{repo-name}/blob/master/CHANGELOG.md
-        run: echo 'See [CHANGELOG.md](${{ github.server_url }}/${{ github.repository }}/blob/master/CHANGELOG.md) for changes.' > tmp_release_notes.md
+        run: echo 'See [CHANGELOG](${{ github.server_url }}/${{ github.repository }}/blob/master/CHANGELOG.md)' > tmp_release_notes.md
       # https://github.com/marketplace/actions/goreleaser-action
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
