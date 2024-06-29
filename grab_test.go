@@ -34,7 +34,10 @@ func TestGrabE2E(t *testing.T) {
 		"--log-filename", filepath.Join(dir, "log.jsonl"),
 	}
 
-	parsed, err := app.Parse(args, warg.LookupMap(nil))
+	parsed, err := app.Parse(
+		warg.OverrideArgs(args),
+		warg.OverrideLookupFunc(warg.LookupMap(nil)),
+	)
 	require.Nil(t, err)
 
 	err = parsed.Action(parsed.Context)
