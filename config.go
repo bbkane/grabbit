@@ -10,6 +10,7 @@ import (
 	"go.bbkane.com/logos"
 	"go.bbkane.com/warg/command"
 	"go.bbkane.com/warg/help/common"
+	"go.bbkane.com/warg/path"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -20,7 +21,7 @@ var embeddedConfig []byte
 func editConfig(ctx command.Context) error {
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   ctx.Flags["--log-filename"].(string),
+		Filename:   ctx.Flags["--log-filename"].(path.Path).MustExpand(),
 		MaxAge:     ctx.Flags["--log-maxage"].(int),
 		MaxBackups: ctx.Flags["--log-maxbackups"].(int),
 		MaxSize:    ctx.Flags["--log-maxsize"].(int),
@@ -37,7 +38,7 @@ func editConfig(ctx command.Context) error {
 	logger := logos.New(zapLogger, color)
 	logger.LogOnPanic()
 
-	configPath, configPathExists := ctx.Flags["--config"].(string)
+	configPath, configPathExists := ctx.Flags["--config"]
 	if !configPathExists {
 		err := errors.New("must path --config")
 		logger.Errorw(
@@ -48,7 +49,7 @@ func editConfig(ctx command.Context) error {
 	}
 	editor := ctx.Flags["--editor"].(string)
 
-	err = glib.EditFile(embeddedConfig, configPath, editor)
+	err = glib.EditFile(embeddedConfig, configPath.(path.Path).MustExpand(), editor)
 	if err != nil {
 		logger.Errorw(
 			"Unable to edit config",

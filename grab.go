@@ -20,6 +20,7 @@ import (
 	"go.bbkane.com/logos"
 	"go.bbkane.com/warg/command"
 	"go.bbkane.com/warg/help/common"
+	"go.bbkane.com/warg/path"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -293,16 +294,22 @@ func testRedditConnection(logger *logos.Logger) error {
 	// Test connection
 	conn, err := tls.DialWithDialer(
 		&net.Dialer{
-			Timeout:        time.Second * 30,
-			Deadline:       time.Time{},
-			LocalAddr:      nil,
-			DualStack:      false,
-			FallbackDelay:  0,
-			KeepAlive:      0,
-			Resolver:       nil,
 			Cancel:         nil,
 			Control:        nil,
 			ControlContext: nil,
+			Deadline:       time.Time{},
+			DualStack:      false,
+			FallbackDelay:  0,
+			KeepAlive:      0,
+			KeepAliveConfig: net.KeepAliveConfig{
+				Enable:   false,
+				Idle:     0,
+				Interval: 0,
+				Count:    0,
+			},
+			LocalAddr: nil,
+			Resolver:  nil,
+			Timeout:   time.Second * 30,
 		},
 		"tcp",
 		net.JoinHostPort("reddit.com", "443"),
@@ -336,7 +343,7 @@ func grab(ctx command.Context) error {
 
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   ctx.Flags["--log-filename"].(string),
+		Filename:   ctx.Flags["--log-filename"].(path.Path).MustExpand(),
 		MaxAge:     ctx.Flags["--log-maxage"].(int),
 		MaxBackups: ctx.Flags["--log-maxbackups"].(int),
 		MaxSize:    ctx.Flags["--log-maxsize"].(int),
@@ -353,7 +360,7 @@ func grab(ctx command.Context) error {
 	logger := logos.New(zapLogger, color)
 	logger.LogOnPanic()
 
-	subredditDestinations := ctx.Flags["--subreddit-destination"].([]string)
+	subredditDestinations := ctx.Flags["--subreddit-destination"].([]path.Path)
 	subredditLimits := ctx.Flags["--subreddit-limit"].([]int)
 	subredditNames := ctx.Flags["--subreddit-name"].([]string)
 	subredditTimeframes := ctx.Flags["--subreddit-timeframe"].([]string)
@@ -382,7 +389,7 @@ func grab(ctx command.Context) error {
 
 		sr := subreddit{
 			Name:        subredditNames[i],
-			Destination: subredditDestinations[i],
+			Destination: subredditDestinations[i].MustExpand(),
 			Timeframe:   subredditTimeframes[i],
 			Limit:       subredditLimits[i],
 		}
