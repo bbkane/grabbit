@@ -1,13 +1,14 @@
 module go.bbkane.com/grabbit/v4
 
 go 1.22
+toolchain go1.23.4
 
 require (
 	github.com/bbkane/glib v0.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/vartanbeno/go-reddit/v2 v2.0.1
 	go.bbkane.com/logos v0.4.0
-	go.bbkane.com/warg v0.0.23
+	go.bbkane.com/warg v0.0.26
 	go.uber.org/zap v1.27.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
