@@ -39,6 +39,23 @@ grabbit config edit --editor /path/to/editor
 grabbit grab
 ```
 
+## See current wallpapers
+
+On macOS, I use the followng command to see what wallpapers (and any other open files) my desktop is using:
+
+```bash
+lsof -c WallpaperImageExtension
+```
+
+I can run a similar command in XFCE:
+
+```bash
+xfconf-query -c xfce4-desktop -l \
+| grep last-image \
+| while read -r property; do xfconf-query -c xfce4-desktop -p "$property"; done \
+| sort -u
+```
+
 ## Docs
 
 - Run grabbit on a schedule: [./schedule_it.md](./schedule_it.md)
