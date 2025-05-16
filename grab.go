@@ -18,9 +18,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/v2/reddit"
 	"go.bbkane.com/logos"
-	"go.bbkane.com/warg/command"
 	"go.bbkane.com/warg/help/common"
 	"go.bbkane.com/warg/path"
+	"go.bbkane.com/warg/wargcore"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -337,7 +337,7 @@ func testRedditConnection(logger *logos.Logger) error {
 	return nil
 }
 
-func grab(ctx command.Context) error {
+func grab(ctx wargcore.Context) error {
 
 	timeout := ctx.Flags["--timeout"].(time.Duration)
 

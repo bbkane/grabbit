@@ -8,9 +8,9 @@ import (
 
 	"github.com/bbkane/glib"
 	"go.bbkane.com/logos"
-	"go.bbkane.com/warg/command"
 	"go.bbkane.com/warg/help/common"
 	"go.bbkane.com/warg/path"
+	"go.bbkane.com/warg/wargcore"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -18,7 +18,7 @@ import (
 //go:embed embedded/grabbit.yaml
 var embeddedConfig []byte
 
-func editConfig(ctx command.Context) error {
+func editConfig(ctx wargcore.Context) error {
 	// retrieve types:
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:   ctx.Flags["--log-filename"].(path.Path).MustExpand(),

@@ -11,9 +11,12 @@ import (
 	"go.bbkane.com/warg/section"
 	"go.bbkane.com/warg/value/scalar"
 	"go.bbkane.com/warg/value/slice"
+	"go.bbkane.com/warg/wargcore"
 )
 
-func app() *warg.App {
+var version string
+
+func app() *wargcore.App {
 	appFooter := `Examples (assuming BASH-like shell):
 
   # Grab from passed flags
@@ -32,7 +35,7 @@ func app() *warg.App {
 Homepage: https://github.com/bbkane/grabbit
 `
 
-	logFlags := flag.FlagMap{
+	logFlags := wargcore.FlagMap{
 		"--log-filename": flag.New(
 			"Log filename",
 			scalar.Path(
@@ -69,14 +72,15 @@ Homepage: https://github.com/bbkane/grabbit
 
 	app := warg.New(
 		"grabbit",
+		version,
 		section.New(
 			"Get top images from subreddits",
-			section.Command(
+			section.NewCommand(
 				"grab",
 				"Grab images. Optionally use `config edit` first to create a config",
 				grab,
-				command.ExistingFlags(logFlags),
-				command.Flag(
+				command.FlagMap(logFlags),
+				command.NewFlag(
 					"--subreddit-name",
 					"Subreddit to grab",
 					slice.String(
@@ -86,7 +90,7 @@ Homepage: https://github.com/bbkane/grabbit
 					flag.ConfigPath("subreddits[].name"),
 					flag.Required(),
 				),
-				command.Flag(
+				command.NewFlag(
 					"--subreddit-destination",
 					"Where to store the subreddit",
 					slice.Path(
@@ -96,7 +100,7 @@ Homepage: https://github.com/bbkane/grabbit
 					flag.ConfigPath("subreddits[].destination"),
 					flag.Required(),
 				),
-				command.Flag(
+				command.NewFlag(
 					"--subreddit-timeframe",
 					"Take the top subreddits from this timeframe",
 					slice.String(
@@ -107,7 +111,7 @@ Homepage: https://github.com/bbkane/grabbit
 					flag.ConfigPath("subreddits[].timeframe"),
 					flag.Required(),
 				),
-				command.Flag(
+				command.NewFlag(
 					"--subreddit-limit",
 					"Max number of links to try to download",
 					slice.Int(
@@ -117,7 +121,7 @@ Homepage: https://github.com/bbkane/grabbit
 					flag.ConfigPath("subreddits[].limit"),
 					flag.Required(),
 				),
-				command.Flag(
+				command.NewFlag(
 					"--timeout",
 					"Timeout for a single download",
 					scalar.Duration(
@@ -127,18 +131,16 @@ Homepage: https://github.com/bbkane/grabbit
 					flag.Required(),
 				),
 			),
-
 			section.Footer(appFooter),
-
-			section.Section(
+			section.NewSection(
 				"config",
 				"Config commands",
-				section.Command(
+				section.NewCommand(
 					"edit",
 					"Edit or create configuration file.",
 					editConfig,
-					command.ExistingFlags(logFlags),
-					command.Flag(
+					command.FlagMap(logFlags),
+					command.NewFlag(
 						"--editor",
 						"Path to editor",
 						scalar.String(
@@ -152,13 +154,16 @@ Homepage: https://github.com/bbkane/grabbit
 			),
 		),
 		warg.ConfigFlag(
-			"--config",
-			[]scalar.ScalarOpt[path.Path]{
-				scalar.Default(path.New("~/.config/grabbit.yaml")),
-			},
 			yamlreader.New,
-			"Config filepath",
-			flag.Alias("-c"),
+			wargcore.FlagMap{
+				"--config": flag.New(
+					"Path to YAML config file",
+					scalar.Path(
+						scalar.Default(path.New("~/.config/grabbit.yaml")),
+					),
+					flag.Alias("-c"),
+				),
+			},
 		),
 		warg.SkipValidation(),
 	)
@@ -166,5 +171,6 @@ Homepage: https://github.com/bbkane/grabbit
 }
 
 func main() {
-	app().MustRun()
+	app := app()
+	app.MustRun()
 }

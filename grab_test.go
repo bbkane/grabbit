@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.bbkane.com/warg"
+	"go.bbkane.com/warg/parseopt"
+	"go.bbkane.com/warg/wargcore"
 )
 
 func TestGrabE2E(t *testing.T) {
@@ -35,8 +36,8 @@ func TestGrabE2E(t *testing.T) {
 	}
 
 	parsed, err := app.Parse(
-		warg.OverrideArgs(args),
-		warg.OverrideLookupFunc(warg.LookupMap(nil)),
+		parseopt.Args(args),
+		parseopt.LookupEnv(wargcore.LookupMap(nil)),
 	)
 	require.Nil(t, err)
 
