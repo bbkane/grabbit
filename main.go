@@ -75,6 +75,7 @@ Homepage: https://github.com/bbkane/grabbit
 		version,
 		section.New(
 			"Get top images from subreddits",
+			section.CommandMap(warg.VersionCommandMap()),
 			section.NewCommand(
 				"grab",
 				"Grab images. Optionally use `config edit` first to create a config",
