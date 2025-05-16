@@ -150,36 +150,18 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 
 	ua := runtime.GOOS + ":" + "grabbit" + ":" + version + " (go.bbkane.com/grabbit)"
 
-	transport := &http.Transport{
-		Dial:                   nil,
-		DialTLSContext:         nil,
-		DialTLS:                nil,
-		TLSClientConfig:        nil,
-		DisableKeepAlives:      false,
-		DisableCompression:     false,
-		MaxIdleConnsPerHost:    0,
-		MaxConnsPerHost:        0,
-		ResponseHeaderTimeout:  0,
-		ProxyConnectHeader:     nil,
-		GetProxyConnectHeader:  nil,
-		MaxResponseHeaderBytes: 0,
-		WriteBufferSize:        0,
-		ReadBufferSize:         0,
-		Proxy:                  http.ProxyFromEnvironment,
-		OnProxyConnectResponse: nil,
-		DialContext:            nil,
-		// https://www.reddit.com/r/redditdev/comments/uncu00/comment/i8gyfmx/
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		TLSNextProto:          nil,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
+	var transport http.Transport
+	transport.Proxy = http.ProxyFromEnvironment
+	// https://www.reddit.com/r/redditdev/comments/uncu00/comment/i8gyfmx/
+	transport.ForceAttemptHTTP2 = true
+	transport.MaxIdleConns = 100
+	transport.IdleConnTimeout = 90 * time.Second
+	transport.TLSHandshakeTimeout = 10 * time.Second
+	transport.ExpectContinueTimeout = 1 * time.Second
 
 	httpClient := &http.Client{
 		Timeout:       timeout,
-		Transport:     transport,
+		Transport:     &transport,
 		CheckRedirect: nil,
 		Jar:           nil,
 	}
