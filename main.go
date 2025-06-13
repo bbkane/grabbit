@@ -166,6 +166,7 @@ Homepage: https://github.com/bbkane/grabbit
 				),
 			},
 		),
+		warg.GlobalFlagMap(warg.ColorFlagMap()),
 		warg.SkipValidation(),
 	)
 	return &app
