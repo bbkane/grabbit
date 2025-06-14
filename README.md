@@ -8,6 +8,10 @@ See my [personal config](https://github.com/bbkane/dotfiles/blob/master/grabbit/
 
 ![My Setup](./reddit_wallpapers.jpg)
 
+## Project Status (2025-06-14)
+
+Basically complete! I use `grabbit` for wallpapers. At some point I'd like to use OTEL tracing instead of the current logging framework, but that's not a huge deal. I'm watching issues; please open one for any questions and especially BEFORE submitting a Pull request.
+
 ## Install
 
 - [Homebrew](https://brew.sh/): `brew install bbkane/tap/grabbit`
@@ -20,7 +24,7 @@ scoop install bbkane/grabbit
 
 - Download Mac/Linux/Windows executable: [GitHub releases](https://github.com/bbkane/grabbit/releases)
 - Go: `go install go.bbkane.com/grabbit/v4@latest`
-- Build with [goreleaser](https://goreleaser.com/) after cloning: `goreleaser --snapshot --skip-publish --rm-dist`
+- Build with [goreleaser](https://goreleaser.com/) after cloning: `goreleaser release --snapshot --clean`
 
 ## Use
 
@@ -60,6 +64,7 @@ xfconf-query -c xfce4-desktop -l \
 
 - Run grabbit on a schedule: [./schedule_it.md](./schedule_it.md)
 - Hack on grabbit: [./dev_notes.md](./dev_notes.md)
+- See [Go Project Notes](https://www.bbkane.com/blog/go-project-notes/) for notes on development tooling.
 - [MIT Licensed](./LICENSE)
 
 ## 3rd Party Credits
