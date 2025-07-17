@@ -3,6 +3,7 @@ package main
 import "testing"
 
 func Test_validateImageURL(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		fullURL string
 	}

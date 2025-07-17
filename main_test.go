@@ -5,6 +5,7 @@ import (
 )
 
 func TestApp_Validate(t *testing.T) {
+	t.Parallel()
 	app := app()
 
 	if err := app.Validate(); err != nil {

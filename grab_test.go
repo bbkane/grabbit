@@ -11,6 +11,7 @@ import (
 )
 
 func TestGrabE2E(t *testing.T) {
+	t.Parallel()
 	// A non-deterministic test,so we do have to inspect the output...
 	// But it's the best way to determine if reddit really works too
 

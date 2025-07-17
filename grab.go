@@ -74,7 +74,7 @@ func downloadImage(URL string, fileName string) error {
 		// https://golang.org/pkg/net/http/#DetectContentType
 		contentType := http.DetectContentType(contentBytes)
 
-		if !(contentType == "image/jpeg" || contentType == "image/png") {
+		if contentType != "image/jpeg" && contentType != "image/png" {
 			err = errors.Errorf("contentType is not 'image/jpeg' or 'image/png': %+v\n", contentType)
 			return err
 		}
@@ -347,9 +347,9 @@ func grab(ctx wargcore.Context) error {
 	subredditNames := ctx.Flags["--subreddit-name"].([]string)
 	subredditTimeframes := ctx.Flags["--subreddit-timeframe"].([]string)
 
-	if !(len(subredditDestinations) == len(subredditLimits) &&
-		len(subredditLimits) == len(subredditNames) &&
-		len(subredditNames) == len(subredditTimeframes)) {
+	if len(subredditDestinations) != len(subredditLimits) ||
+		len(subredditLimits) != len(subredditNames) ||
+		len(subredditNames) != len(subredditTimeframes) {
 		logger.Errorw(
 			"the following lengths should be equal",
 			"len(subredditDestinations)", len(subredditDestinations),
@@ -362,7 +362,7 @@ func grab(ctx wargcore.Context) error {
 
 	err = testRedditConnection(logger)
 	if err != nil {
-		return fmt.Errorf("Cannot connect to reddit: %w", err)
+		return fmt.Errorf("cannot connect to reddit: %w", err)
 	}
 
 	timeoutCtx := context.Background()
