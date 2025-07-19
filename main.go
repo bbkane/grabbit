@@ -5,6 +5,7 @@ import (
 
 	"go.bbkane.com/warg"
 	"go.bbkane.com/warg/command"
+	"go.bbkane.com/warg/completion"
 	"go.bbkane.com/warg/config/yamlreader"
 	"go.bbkane.com/warg/flag"
 	"go.bbkane.com/warg/path"
@@ -99,6 +100,12 @@ Homepage: https://github.com/bbkane/grabbit
 					),
 					flag.Alias("-sd"),
 					flag.ConfigPath("subreddits[].destination"),
+					flag.CompletionCandidates(func(ctx wargcore.Context) (*completion.Candidates, error) {
+						return &completion.Candidates{
+							Type:   completion.Type_Directories,
+							Values: nil,
+						}, nil
+					}),
 					flag.Required(),
 				),
 				command.NewFlag(
@@ -148,6 +155,12 @@ Homepage: https://github.com/bbkane/grabbit
 							scalar.Default("vi"),
 						),
 						flag.Alias("-e"),
+						flag.CompletionCandidates(func(ctx wargcore.Context) (*completion.Candidates, error) {
+							return &completion.Candidates{
+								Type:   completion.Type_DirectoriesFiles,
+								Values: nil,
+							}, nil
+						}),
 						flag.EnvVars("EDITOR"),
 						flag.Required(),
 					),
@@ -163,6 +176,12 @@ Homepage: https://github.com/bbkane/grabbit
 						scalar.Default(path.New("~/.config/grabbit.yaml")),
 					),
 					flag.Alias("-c"),
+					flag.CompletionCandidates(func(ctx wargcore.Context) (*completion.Candidates, error) {
+						return &completion.Candidates{
+							Type:   completion.Type_DirectoriesFiles,
+							Values: nil,
+						}, nil
+					}),
 				),
 			},
 		),
