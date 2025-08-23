@@ -18,9 +18,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/v2/reddit"
 	"go.bbkane.com/logos"
-	"go.bbkane.com/warg/help/common"
+	"go.bbkane.com/warg"
 	"go.bbkane.com/warg/path"
-	"go.bbkane.com/warg/wargcore"
 	"go.uber.org/zap"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -319,7 +318,7 @@ func testRedditConnection(logger *logos.Logger) error {
 	return nil
 }
 
-func grab(ctx wargcore.Context) error {
+func grab(ctx warg.CmdContext) error {
 
 	timeout := ctx.Flags["--timeout"].(time.Duration)
 
@@ -333,7 +332,7 @@ func grab(ctx wargcore.Context) error {
 		Compress:   false,
 	}
 
-	color, err := common.ConditionallyEnableColor(ctx.Flags, os.Stdout)
+	color, err := warg.ConditionallyEnableColor(ctx.Flags, os.Stdout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error enabling color, continuing without: %s", err.Error())
 	}

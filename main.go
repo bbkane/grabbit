@@ -4,20 +4,15 @@ import (
 	"time"
 
 	"go.bbkane.com/warg"
-	"go.bbkane.com/warg/command"
-	"go.bbkane.com/warg/completion"
 	"go.bbkane.com/warg/config/yamlreader"
-	"go.bbkane.com/warg/flag"
 	"go.bbkane.com/warg/path"
-	"go.bbkane.com/warg/section"
 	"go.bbkane.com/warg/value/scalar"
 	"go.bbkane.com/warg/value/slice"
-	"go.bbkane.com/warg/wargcore"
 )
 
 var version string
 
-func app() *wargcore.App {
+func app() *warg.App {
 	appFooter := `Examples (assuming BASH-like shell):
 
   # Grab from passed flags
@@ -36,156 +31,139 @@ func app() *wargcore.App {
 Homepage: https://github.com/bbkane/grabbit
 `
 
-	logFlags := wargcore.FlagMap{
-		"--log-filename": flag.New(
+	logFlags := warg.FlagMap{
+		"--log-filename": warg.NewFlag(
 			"Log filename",
 			scalar.Path(
 				scalar.Default(path.New("~/.config/grabbit.jsonl")),
 			),
-			flag.ConfigPath("lumberjacklogger.filename"),
-			flag.Required(),
+			warg.ConfigPath("lumberjacklogger.filename"),
+			warg.Required(),
 		),
-		"--log-maxage": flag.New(
+		"--log-maxage": warg.NewFlag(
 			"Max age before log rotation in days", // TODO: change to duration flag
 			scalar.Int(
 				scalar.Default(30),
 			),
-			flag.ConfigPath("lumberjacklogger.maxage"),
-			flag.Required(),
+			warg.ConfigPath("lumberjacklogger.maxage"),
+			warg.Required(),
 		),
-		"--log-maxbackups": flag.New(
+		"--log-maxbackups": warg.NewFlag(
 			"Num backups for the log",
 			scalar.Int(
 				scalar.Default(0),
 			),
-			flag.ConfigPath("lumberjacklogger.maxbackups"),
-			flag.Required(),
+			warg.ConfigPath("lumberjacklogger.maxbackups"),
+			warg.Required(),
 		),
-		"--log-maxsize": flag.New(
+		"--log-maxsize": warg.NewFlag(
 			"Max size of log in megabytes",
 			scalar.Int(
 				scalar.Default(5),
 			),
-			flag.ConfigPath("lumberjacklogger.maxsize"),
-			flag.Required(),
+			warg.ConfigPath("lumberjacklogger.maxsize"),
+			warg.Required(),
 		),
 	}
 
 	app := warg.New(
 		"grabbit",
 		version,
-		section.New(
+		warg.NewSection(
 			"Get top images from subreddits",
-			section.CommandMap(warg.VersionCommandMap()),
-			section.NewCommand(
+			warg.NewSubCmd(
 				"grab",
 				"Grab images. Optionally use `config edit` first to create a config",
 				grab,
-				command.FlagMap(logFlags),
-				command.NewFlag(
+				warg.CmdFlagMap(logFlags),
+				warg.NewCmdFlag(
 					"--subreddit-name",
 					"Subreddit to grab",
 					slice.String(
 						slice.Default([]string{"earthporn", "wallpapers"}),
 					),
-					flag.Alias("-sn"),
-					flag.ConfigPath("subreddits[].name"),
-					flag.Required(),
+					warg.Alias("-sn"),
+					warg.ConfigPath("subreddits[].name"),
+					warg.Required(),
 				),
-				command.NewFlag(
+				warg.NewCmdFlag(
 					"--subreddit-destination",
 					"Where to store the subreddit",
 					slice.Path(
 						slice.Default([]path.Path{path.New("."), path.New(".")}),
 					),
-					flag.Alias("-sd"),
-					flag.ConfigPath("subreddits[].destination"),
-					flag.CompletionCandidates(func(ctx wargcore.Context) (*completion.Candidates, error) {
-						return &completion.Candidates{
-							Type:   completion.Type_Directories,
-							Values: nil,
-						}, nil
-					}),
-					flag.Required(),
+					warg.Alias("-sd"),
+					warg.ConfigPath("subreddits[].destination"),
+					warg.FlagCompletions(warg.CompletionsDirectoriesFiles()),
+					warg.Required(),
 				),
-				command.NewFlag(
+				warg.NewCmdFlag(
 					"--subreddit-timeframe",
 					"Take the top subreddits from this timeframe",
 					slice.String(
 						slice.Choices("day", "week", "month", "year", "all"),
 						slice.Default([]string{"week", "week"}),
 					),
-					flag.Alias("-st"),
-					flag.ConfigPath("subreddits[].timeframe"),
-					flag.Required(),
+					warg.Alias("-st"),
+					warg.ConfigPath("subreddits[].timeframe"),
+					warg.Required(),
 				),
-				command.NewFlag(
+				warg.NewCmdFlag(
 					"--subreddit-limit",
 					"Max number of links to try to download",
 					slice.Int(
 						slice.Default([]int{2, 3}),
 					),
-					flag.Alias("-sl"),
-					flag.ConfigPath("subreddits[].limit"),
-					flag.Required(),
+					warg.Alias("-sl"),
+					warg.ConfigPath("subreddits[].limit"),
+					warg.Required(),
 				),
-				command.NewFlag(
+				warg.NewCmdFlag(
 					"--timeout",
 					"Timeout for a single download",
 					scalar.Duration(
 						scalar.Default(time.Second*30),
 					),
-					flag.Alias("-t"),
-					flag.Required(),
+					warg.Alias("-t"),
+					warg.Required(),
 				),
 			),
-			section.Footer(appFooter),
-			section.NewSection(
+			warg.SectionFooter(appFooter),
+			warg.NewSubSection(
 				"config",
 				"Config commands",
-				section.NewCommand(
+				warg.NewSubCmd(
 					"edit",
 					"Edit or create configuration file.",
 					editConfig,
-					command.FlagMap(logFlags),
-					command.NewFlag(
+					warg.CmdFlagMap(logFlags),
+					warg.NewCmdFlag(
 						"--editor",
 						"Path to editor",
 						scalar.String(
 							scalar.Default("vi"),
 						),
-						flag.Alias("-e"),
-						flag.CompletionCandidates(func(ctx wargcore.Context) (*completion.Candidates, error) {
-							return &completion.Candidates{
-								Type:   completion.Type_DirectoriesFiles,
-								Values: nil,
-							}, nil
-						}),
-						flag.EnvVars("EDITOR"),
-						flag.Required(),
+						warg.Alias("-e"),
+						warg.FlagCompletions(warg.CompletionsDirectoriesFiles()),
+						warg.EnvVars("EDITOR"),
+						warg.Required(),
 					),
 				),
 			),
 		),
 		warg.ConfigFlag(
 			yamlreader.New,
-			wargcore.FlagMap{
-				"--config": flag.New(
+			warg.FlagMap{
+				"--config": warg.NewFlag(
 					"Path to YAML config file",
 					scalar.Path(
 						scalar.Default(path.New("~/.config/grabbit.yaml")),
 					),
-					flag.Alias("-c"),
-					flag.CompletionCandidates(func(ctx wargcore.Context) (*completion.Candidates, error) {
-						return &completion.Candidates{
-							Type:   completion.Type_DirectoriesFiles,
-							Values: nil,
-						}, nil
-					}),
+					warg.Alias("-c"),
+					warg.FlagCompletions(warg.CompletionsDirectoriesFiles()),
 				),
 			},
 		),
-		warg.GlobalFlagMap(warg.ColorFlagMap()),
 		warg.SkipValidation(),
 	)
 	return &app
