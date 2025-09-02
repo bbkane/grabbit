@@ -23,7 +23,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.bbkane.com/gocolor v0.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
