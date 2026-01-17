@@ -29,7 +29,8 @@ func TestGrabE2E(t *testing.T) {
 		"--subreddit-destination", dir,
 		"--subreddit-limit", "1",
 		"--subreddit-name", "wallpapers",
-		"--subreddit-timeframe", "day",
+		// 2026-01-17: for some reason "day" is returning an empty list
+		"--subreddit-timeframe", "week",
 		// hack to not use a config
 		"--config", "not-there",
 		"--log-filename", filepath.Join(dir, "log.jsonl"),

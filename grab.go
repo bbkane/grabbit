@@ -395,6 +395,13 @@ func grab(ctx warg.CmdContext) error {
 			)
 			continue
 		}
+		if len(posts) == 0 {
+			logger.Errorw(
+				"posts list is empty",
+				"subreddit", sr.Name,
+			)
+			continue
+		}
 
 		grabSubreddit(logger, sr, posts)
 	}
