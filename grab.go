@@ -340,7 +340,7 @@ func checkConfigVersionKey(configPath string, requiredVersion string) error {
 	requiredMajorVersion, _, _ := strings.Cut(requiredVersion, ".")
 	configMajorVersion, _, _ := strings.Cut(s.Version, ".")
 	if requiredMajorVersion != configMajorVersion {
-		return fmt.Errorf("config version %s is not compatible with required version %s", s.Version, requiredVersion)
+		return fmt.Errorf("config version %s is not compatible with required version %s. See https://github.com/bbkane/grabbit/blob/master/CHANGELOG.md", s.Version, requiredVersion)
 	}
 	return nil
 }
