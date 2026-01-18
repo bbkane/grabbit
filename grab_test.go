@@ -44,3 +44,60 @@ func TestGrabE2E(t *testing.T) {
 	require.Nil(t, err)
 
 }
+func TestCheckConfigVersionKey(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name            string
+		filename        string
+		requiredVersion string
+		wantErr         bool
+	}{
+		{
+			name:            "devel version always passes",
+			filename:        "testdata/TestCheckConfigVersionKey/valid.yaml",
+			requiredVersion: "(devel)",
+			wantErr:         false,
+		},
+		{
+			name:            "matching major versions",
+			filename:        "testdata/TestCheckConfigVersionKey/v1.0.yaml",
+			requiredVersion: "1.2.3",
+			wantErr:         false,
+		},
+		{
+			name:            "mismatched major versions",
+			filename:        "testdata/TestCheckConfigVersionKey/v2.0.yaml",
+			requiredVersion: "1.0.0",
+			wantErr:         true,
+		},
+		{
+			name:            "file not found",
+			filename:        "testdata/TestCheckConfigVersionKey/nonexistent.yaml",
+			requiredVersion: "1.0.0",
+			wantErr:         true,
+		},
+		{
+			name:            "invalid yaml",
+			filename:        "testdata/TestCheckConfigVersionKey/invalid.notyaml",
+			requiredVersion: "1.0.0",
+			wantErr:         true,
+		},
+		{
+			name:            "just major version",
+			filename:        "testdata/TestCheckConfigVersionKey/v1.yaml",
+			requiredVersion: "1.0.0",
+			wantErr:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := checkConfigVersionKey(tt.filename, tt.requiredVersion)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

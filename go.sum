@@ -45,8 +45,6 @@ go.bbkane.com/gocolor v0.0.5 h1:WrdijR+XIH9QXXYUYTPH7m8QGIp7wLdMFWKL+8bK38Q=
 go.bbkane.com/gocolor v0.0.5/go.mod h1:7AEOm8kyPlpj9qr/SL9mEXSceh8xM2w+eBm4deMRNHk=
 go.bbkane.com/logos v0.4.0 h1:7k6mQiSK7ZXJa/OGZATxCeNgZX9D0qPx+NwWwEb2NwA=
 go.bbkane.com/logos v0.4.0/go.mod h1:sxAz5z3jxSA3GQ2z6NL7wmGXISGQKCuA7XM0DGY+fKE=
-go.bbkane.com/warg v0.0.38 h1:HVFsFdM1PZdxQqWddKtzdJzLFNJCryZDz/eBWNrOfyY=
-go.bbkane.com/warg v0.0.38/go.mod h1:3WKHr3eSQNJ/WHqMnyb9Asu1OQg/Q8QRv2DhjZbQ0BA=
 go.bbkane.com/warg v0.0.39 h1:mMcJSPJarEtY5dfKF4YW6I7wanNGMvGDRDFlAwCdKo8=
 go.bbkane.com/warg v0.0.39/go.mod h1:rXKbGwUtZ2QcD42uUdRa2o1iVc6I+ubmZi9NQvc7EAs=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
@@ -75,7 +73,5 @@ gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EV
 gopkg.in/natefinch/lumberjack.v2 v2.2.1 h1:bBRl1b0OH9s/DuPhuXpNl+VtCaJXFZ5/uEFST95x9zc=
 gopkg.in/natefinch/lumberjack.v2 v2.2.1/go.mod h1:YD8tP3GAjkrDg1eZH7EGmyESg/lsYskCTPBJVb9jqSc=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
-gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=
-gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
