@@ -341,23 +341,8 @@ func grab(ctx warg.CmdContext) error {
 	logger := logos.New(zapLogger, color)
 	logger.LogOnPanic()
 
-	subredditDestinations := ctx.Flags["--subreddit-destination"].([]path.Path)
-	subredditLimits := ctx.Flags["--subreddit-limit"].([]int)
-	subredditNames := ctx.Flags["--subreddit-name"].([]string)
-	subredditTimeframes := ctx.Flags["--subreddit-timeframe"].([]string)
-
-	if len(subredditDestinations) != len(subredditLimits) ||
-		len(subredditLimits) != len(subredditNames) ||
-		len(subredditNames) != len(subredditTimeframes) {
-		logger.Errorw(
-			"the following lengths should be equal",
-			"len(subredditDestinations)", len(subredditDestinations),
-			"len(subredditLimits)", len(subredditLimits),
-			"len(subredditNames)", len(subredditNames),
-			"len(subredditTimeframes)", len(subredditTimeframes),
-		)
-		return errors.New("Non-matching lengths")
-	}
+	subredditInfos := ctx.Flags["--subreddit-info"].([]SubredditInfo)
+	destination := ctx.Flags["--destination"].(path.Path).MustExpand()
 
 	err = testRedditConnection(logger)
 	if err != nil {
@@ -366,13 +351,13 @@ func grab(ctx warg.CmdContext) error {
 
 	timeoutCtx := context.Background()
 
-	for i := 0; i < len(subredditDestinations); i++ {
+	for i := 0; i < len(subredditInfos); i++ {
 
 		sr := subreddit{
-			Name:        subredditNames[i],
-			Destination: subredditDestinations[i].MustExpand(),
-			Timeframe:   subredditTimeframes[i],
-			Limit:       subredditLimits[i],
+			Name:        subredditInfos[i].Subreddit,
+			Destination: destination,
+			Timeframe:   subredditInfos[i].Timeframe,
+			Limit:       subredditInfos[i].Count,
 		}
 
 		_, err := glib.ValidateDirectory(sr.Destination)

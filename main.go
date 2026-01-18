@@ -83,7 +83,7 @@ Homepage: https://github.com/bbkane/grabbit
 				),
 				warg.NewCmdFlag(
 					"--subreddit-info",
-					"<subreddit>,<day|week|month|year>,<count>",
+					"<subreddit>,<day|week|month|year|all>,<count>",
 					slice.New(
 						SubredditInfoTypeInfo(),
 						slice.Default([]SubredditInfo{

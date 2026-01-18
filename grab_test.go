@@ -26,11 +26,9 @@ func TestGrabE2E(t *testing.T) {
 	app := app()
 	args := []string{
 		"grabbit", "grab",
-		"--subreddit-destination", dir,
-		"--subreddit-limit", "1",
-		"--subreddit-name", "wallpapers",
 		// 2026-01-17: for some reason "day" is returning an empty list
-		"--subreddit-timeframe", "week",
+		"--subreddit-info", "wallpapers,week,1",
+		"--destination", dir,
 		// hack to not use a config
 		"--config", "not-there",
 		"--log-filename", filepath.Join(dir, "log.jsonl"),
