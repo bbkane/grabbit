@@ -15,6 +15,7 @@ type SubredditInfo struct {
 	Count     int
 }
 
+// nolint: gochecknoglobals // readonly map used for validation
 var validTimeFrames = map[string]bool{
 	"day":   true,
 	"week":  true,

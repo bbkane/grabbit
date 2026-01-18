@@ -16,11 +16,7 @@ func app() *warg.App {
 	appFooter := `Examples (assuming BASH-like shell):
 
   # Grab from passed flags
-  grabbit grab \
-      --subreddit-destination . \
-      --subreddit-limit 5 \
-      --subreddit-name wallpapers \
-      --subreddit-timeframe day
+  grabbit grab --subreddit-info "wallpapers,week,5" --destination ./images
 
   # Create/Edit config file
   grabbit config edit --editor /path/to/editor
@@ -77,54 +73,12 @@ Homepage: https://github.com/bbkane/grabbit
 				grab,
 				warg.CmdFlagMap(logFlags),
 				warg.NewCmdFlag(
-					"--subreddit-name",
-					"Subreddit to grab",
-					slice.String(
-						slice.Default([]string{"earthporn", "wallpapers"}),
-					),
-					warg.Alias("-sn"),
-					warg.ConfigPath("subreddits[].name"),
-					warg.Required(),
-				),
-				warg.NewCmdFlag(
-					"--subreddit-destination",
-					"Where to store the subreddit",
-					slice.Path(
-						slice.Default([]path.Path{path.New("."), path.New(".")}),
-					),
-					warg.Alias("-sd"),
-					warg.ConfigPath("subreddits[].destination"),
+					"--destination",
+					"Destination directory for downloads",
+					scalar.Path(scalar.Default(path.New("."))),
+					warg.Alias("-d"),
+					warg.ConfigPath("destination"),
 					warg.FlagCompletions(warg.CompletionsDirectoriesFiles()),
-					warg.Required(),
-				),
-				warg.NewCmdFlag(
-					"--subreddit-timeframe",
-					"Take the top subreddits from this timeframe",
-					slice.String(
-						slice.Choices("day", "week", "month", "year", "all"),
-						slice.Default([]string{"week", "week"}),
-					),
-					warg.Alias("-st"),
-					warg.ConfigPath("subreddits[].timeframe"),
-					warg.Required(),
-				),
-				warg.NewCmdFlag(
-					"--subreddit-limit",
-					"Max number of links to try to download",
-					slice.Int(
-						slice.Default([]int{2, 3}),
-					),
-					warg.Alias("-sl"),
-					warg.ConfigPath("subreddits[].limit"),
-					warg.Required(),
-				),
-				warg.NewCmdFlag(
-					"--timeout",
-					"Timeout for a single download",
-					scalar.Duration(
-						scalar.Default(time.Second*30),
-					),
-					warg.Alias("-t"),
 					warg.Required(),
 				),
 				warg.NewCmdFlag(
@@ -141,6 +95,15 @@ Homepage: https://github.com/bbkane/grabbit
 						}),
 					),
 					warg.ConfigPath("subreddits"),
+					warg.Required(),
+				),
+				warg.NewCmdFlag(
+					"--timeout",
+					"Timeout for a single download",
+					scalar.Duration(
+						scalar.Default(time.Second*30),
+					),
+					warg.Alias("-t"),
 					warg.Required(),
 				),
 			),
