@@ -127,6 +127,22 @@ Homepage: https://github.com/bbkane/grabbit
 					warg.Alias("-t"),
 					warg.Required(),
 				),
+				warg.NewCmdFlag(
+					"--subreddit-info",
+					"<subreddit>,<day|week|month|year>,<count>",
+					slice.New(
+						SubredditInfoTypeInfo(),
+						slice.Default([]SubredditInfo{
+							{
+								Subreddit: "earthporn",
+								Timeframe: "week",
+								Count:     2,
+							},
+						}),
+					),
+					warg.ConfigPath("subreddits"),
+					warg.Required(),
+				),
 			),
 			warg.SectionFooter(appFooter),
 			warg.NewSubSection(

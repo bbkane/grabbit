@@ -1,4 +1,4 @@
 {
-    "go.lintTool": "golangci-lint",
+    "go.lintTool": "golangci-lint-v2",
     "go.useLanguageServer": true
 }
