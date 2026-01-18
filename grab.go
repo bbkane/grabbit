@@ -28,7 +28,7 @@ type subreddit struct {
 	Name        string
 	Destination string
 	Timeframe   string
-	Limit       int
+	Count       int
 }
 
 // downloadImage does not overwrite existing files
@@ -194,7 +194,7 @@ func getTopPosts(ctx context.Context, timeout time.Duration, logger *logos.Logge
 		ctx,
 		sr.Name, &reddit.ListPostOptions{
 			ListOptions: reddit.ListOptions{
-				Limit:  sr.Limit,
+				Limit:  sr.Count,
 				After:  "",
 				Before: "",
 			},
@@ -357,7 +357,7 @@ func grab(ctx warg.CmdContext) error {
 			Name:        subredditInfos[i].Subreddit,
 			Destination: destination,
 			Timeframe:   subredditInfos[i].Timeframe,
-			Limit:       subredditInfos[i].Count,
+			Count:       subredditInfos[i].Count,
 		}
 
 		_, err := glib.ValidateDirectory(sr.Destination)

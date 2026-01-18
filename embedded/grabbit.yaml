@@ -6,9 +6,9 @@ lumberjacklogger:
   maxbackups: 0
   maxsize: 5 # megabytes
 subreddits:
-  - limit: 5
+  - count: 5
     name: earthporn
     timeframe: week
-  - limit: 6
+  - count: 6
     name: cityporn
     timeframe: week

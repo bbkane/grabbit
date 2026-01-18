@@ -65,10 +65,10 @@ lumberjacklogger:
   maxsize: 5 # megabytes
 destination: .
 subreddits:
-  - limit: 5
+  - count: 5
     name: wallpapers
     timeframe: day
-  - limit: 10
+  - count: 10
     name: earthporn
     timeframe: week
 ```

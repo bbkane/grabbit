@@ -62,7 +62,7 @@ func FromIFace(iFace interface{}) (SubredditInfo, error) {
 	if !validTimeFrames[timeframe] {
 		return SubredditInfo{}, fmt.Errorf("invalid timeframe in SubredditInfo: %s", timeframe)
 	}
-	count, ok := m["limit"].(uint64) // YAML numbers are decoded as uint64
+	count, ok := m["count"].(uint64) // YAML numbers are decoded as uint64
 	if !ok {
 		return SubredditInfo{}, fmt.Errorf("expected count to be uint64, got %T", m["count"])
 	}
