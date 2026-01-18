@@ -23,7 +23,7 @@ scoop install bbkane/grabbit
 ```
 
 - Download Mac/Linux/Windows executable: [GitHub releases](https://github.com/bbkane/grabbit/releases)
-- Go: `go install go.bbkane.com/grabbit/v4@latest`
+- Go: `go install go.bbkane.com/grabbit/v5@latest`
 - Build with [goreleaser](https://goreleaser.com/) after cloning: `goreleaser release --snapshot --clean`
 
 ## Use

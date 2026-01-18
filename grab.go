@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bbkane/glib"
+	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/v2/reddit"
 	"go.bbkane.com/logos"
@@ -318,7 +319,39 @@ func testRedditConnection(logger *logos.Logger) error {
 	return nil
 }
 
+func checkConfigVersionKey(configPath string, requiredVersion string) error {
+	// TODO: maybe I should move this into warg
+
+	if requiredVersion == "(devel)" {
+		return nil
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("could not open file: %w", err)
+	}
+	var s struct {
+		Version string `yaml:"version"`
+	}
+	if err := yaml.Unmarshal(data, &s); err != nil {
+		return fmt.Errorf("could not unmarshal yaml: %w", err)
+	}
+	// compare major versions
+	requiredMajorVersion, _, _ := strings.Cut(requiredVersion, ".")
+	configMajorVersion, _, _ := strings.Cut(s.Version, ".")
+	if requiredMajorVersion != configMajorVersion {
+		return fmt.Errorf("config version %s is not compatible with required version %s", s.Version, requiredVersion)
+	}
+	return nil
+}
+
 func grab(ctx warg.CmdContext) error {
+
+	// check version flag to make sure config format is compatible
+	configPath := ctx.Flags["--config"].(path.Path).MustExpand()
+	if err := checkConfigVersionKey(configPath, ctx.App.Version); err != nil {
+		return fmt.Errorf("config version check failed: %w", err)
+	}
 
 	timeout := ctx.Flags["--timeout"].(time.Duration)
 

@@ -1,4 +1,4 @@
-module go.bbkane.com/grabbit/v4
+module go.bbkane.com/grabbit/v5
 
 go 1.24
 

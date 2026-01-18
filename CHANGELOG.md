@@ -57,7 +57,7 @@ subreddits:
 New config format:
 
 ```yaml
-version: 5 # version key required
+version: v5 # version key required
 lumberjacklogger:
   filename: ~/.config/grabbit.jsonl
   maxage: 30 # days

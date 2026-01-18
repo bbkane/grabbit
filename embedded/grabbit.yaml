@@ -12,3 +12,4 @@ subreddits:
   - count: 6
     name: cityporn
     timeframe: week
+version: v5
