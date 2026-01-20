@@ -8,7 +8,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/vartanbeno/go-reddit/v2 v2.0.1
 	go.bbkane.com/logos v0.4.0
-	go.bbkane.com/warg v0.0.39
+	go.bbkane.com/warg v0.40.0
 	go.uber.org/zap v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
