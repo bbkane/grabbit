@@ -31,10 +31,9 @@ scoop install bbkane/grabbit
 ```bash
 # Grab from passed flags
 grabbit grab \
-    --subreddit-destination . \
-    --subreddit-limit 5 \
-    --subreddit-name wallpapers \
-    --subreddit-timeframe day
+    --destination . \
+    --subreddit-info wallpapers,day,5 \
+    --subreddit-info earthporn,week,10
 
 # Create/Edit config file
 grabbit config edit --editor /path/to/editor
