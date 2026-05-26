@@ -18,6 +18,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 	"github.com/vartanbeno/go-reddit/v2/reddit"
+	"go.bbkane.com/gocolor"
 	"go.bbkane.com/logos"
 	"go.bbkane.com/warg"
 	"go.bbkane.com/warg/path"
@@ -364,8 +365,8 @@ func grab(ctx warg.CmdContext) error {
 		LocalTime:  true,
 		Compress:   false,
 	}
+	color, err := gocolor.Prepare(warg.ColorEnabled(ctx.Flags, ctx.Stdout))
 
-	color, err := warg.ConditionallyEnableColor(ctx.Flags, os.Stdout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error enabling color, continuing without: %s", err.Error())
 	}

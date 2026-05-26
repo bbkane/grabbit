@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/bbkane/glib"
+	"go.bbkane.com/gocolor"
 	"go.bbkane.com/logos"
 	"go.bbkane.com/warg"
 	"go.bbkane.com/warg/path"
@@ -28,7 +29,7 @@ func editConfig(ctx warg.CmdContext) error {
 		Compress:   false,
 	}
 
-	color, err := warg.ConditionallyEnableColor(ctx.Flags, os.Stdout)
+	color, err := gocolor.Prepare(warg.ColorEnabled(ctx.Flags, ctx.Stdout))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error enabling color, continuing without: %s", err.Error())
 	}

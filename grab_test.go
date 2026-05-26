@@ -25,7 +25,7 @@ func TestGrabE2E(t *testing.T) {
 
 	app := app()
 	args := []string{
-		"grabbit", "grab",
+		"grab",
 		// 2026-01-17: for some reason "day" is returning an empty list
 		"--subreddit-info", "wallpapers,week,1",
 		"--destination", dir,
@@ -35,7 +35,7 @@ func TestGrabE2E(t *testing.T) {
 	}
 
 	parsed, err := app.Parse(
-		warg.ParseWithArgs(args),
+		args,
 		warg.ParseWithLookupEnv(warg.LookupMap(nil)),
 	)
 	require.Nil(t, err)

@@ -5,6 +5,12 @@ is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 Note the the latest version is usually work in progress and may have not yet been released.
 
+# v5.0.1
+
+## Changed
+
+- Updated warg to v0.40.2, adding bash/fish completion and changes to default command help output
+
 # v5.0.0
 
 ## Changed
