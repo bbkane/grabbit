@@ -18,7 +18,7 @@ brews:
     homepage: https://github.com/bbkane/grabbit
     install: |
       bin.install "grabbit"
-      generate_completions_from_executable(bin/"grabbit", "completion", shells: [:zsh])
+      generate_completions_from_executable(bin/"grabbit", "completion", shells: [:bash, :fish, :zsh])
     repository:
       name: homebrew-tap
       owner: bbkane
