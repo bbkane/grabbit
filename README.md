@@ -14,7 +14,7 @@ Basically complete! I use `grabbit` for wallpapers. At some point I'd like to us
 
 ## Install
 
-- [Homebrew](https://brew.sh/): `brew install bbkane/tap/grabbit`
+- [Homebrew](https://brew.sh/): `brew install --cask bbkane/tap/grabbit`
 - [Scoop](https://scoop.sh/):
 
 ```

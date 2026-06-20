@@ -6,37 +6,12 @@ before:
     - go mod download
     # you may remove this if you don't need go generate
     # - go generate ./...
-# https://goreleaser.com/customization/homebrew/
-brews:
-  - caveats: |
-      Unfortunately, Apple wants to charge developers $100/year to distribute
-      their apps without a big scary "... the developer cannot be verified"
-      warning. I'm not willing to pay that to give away free apps.
-      See https://www.macworld.com/article/3140183/how-to-install-an-app-in-macos-sierra-thats-not-signed-by-a-developer.html to work around that
-    description: Grab images from subreddits! Useful for getting interesting wallpapers
-    directory: Formula
-    homepage: https://github.com/bbkane/grabbit
-    install: |
-      bin.install "grabbit"
-      generate_completions_from_executable(bin/"grabbit", "completion", shells: [:bash, :fish, :zsh])
-    repository:
-      name: homebrew-tap
-      owner: bbkane
-      # Optionally a token can be provided, if it differs from the token provided to GoReleaser
-      token: '{{ .Env.KEY_GITHUB_GORELEASER_TO_HOMEBREW_TAP }}'
-    # https://crontab.guru/#8_10_*_*_1
-    # https://docs.brew.sh/Formula-Cookbook#service-block-methods
-    # https://goreleaser.com/customization/homebrew/
-    # https://github.com/goreleaser/goreleaser/issues/3990
-    service: |
-      run [opt_bin/"grabbit", "grab"]
-      run_type :cron
-      cron "8 10 * * 1"
 builds:
   - env:
       - CGO_ENABLED=0
     goarch:
       - amd64
+      - arm64
       # - i386  # does anyone care about i386?
     goos:
       - linux
@@ -52,6 +27,34 @@ changelog:
   sort: asc
 checksum:
   name_template: checksums.txt
+# https://goreleaser.com/customization/publish/homebrew_casks/
+homebrew_casks:
+  - binaries:
+      - grabbit
+    caveats: |
+      Unfortunately, Apple wants to charge developers $100/year to distribute
+      their apps without a big scary "... the developer cannot be verified"
+      warning. I'm not willing to pay that to give away free apps.
+      See https://www.macworld.com/article/3140183/how-to-install-an-app-in-macos-sierra-thats-not-signed-by-a-developer.html to work around that
+    description: Grab images from subreddits! Useful for getting interesting wallpapers
+    generate_completions_from_executable:
+      args:
+        - completion
+      executable: grabbit
+      shells:
+        - bash
+        - fish
+        - zsh
+    homepage: https://github.com/bbkane/grabbit
+    hooks:
+      post:
+        install: |
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/grabbit"] if OS.mac?
+    repository:
+      name: homebrew-tap
+      owner: bbkane
+      # Optionally a token can be provided, if it differs from the token provided to GoReleaser
+      token: '{{ .Env.KEY_GITHUB_GORELEASER_TO_HOMEBREW_TAP }}'
 # https://goreleaser.com/customization/scoop/
 scoops:
   - description: A small single-binary CLI to grab images from Reddit

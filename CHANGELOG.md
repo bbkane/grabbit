@@ -5,6 +5,12 @@ is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 Note the the latest version is usually work in progress and may have not yet been released.
 
+# v5.0.2
+
+## Changed
+
+- Update Homebrew installation, --help format. NOTE: this removes `brew services` functionality (see ./schedule_it.md for how to manually set up a service)
+
 # v5.0.1
 
 ## Changed

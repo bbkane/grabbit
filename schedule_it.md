@@ -1,27 +1,62 @@
 # Run grabbit on a schedule
 
-## MacOS Homebrew
+## macOS (launchd)
+
+Note: grabbit is now published as a Homebrew cask, so the old formula-based
+`brew services start grabbit` flow is no longer used.
+
+Find your grabbit binary path:
 
 ```
-brew services start grabbit
+which grabbit
 ```
 
-This runs when started and every Monday at 10AM.
+Create `~/Library/LaunchAgents/com.bbkane.grabbit.plist`:
 
-See `brew services --help` for more info
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>Label</key>
+		<string>com.bbkane.grabbit</string>
 
-## Mac (launchd directly)
+		<key>ProgramArguments</key>
+		<array>
+			<string>/opt/homebrew/bin/grabbit</string>
+			<string>grab</string>
+		</array>
 
-Copy the `plist` stuff from [./.goreleaser.yml](./.goreleaser.yml) to a file named `~/Library/LaunchAgents/com.bbkane.grabbit.plist` and change the following:
+		<key>RunAtLoad</key>
+		<true/>
 
-- `#{plist_name}` -> `com.bbkane.grabbit`
-- `>#{opt_bin}/grabbit` -> full path to grabbit binary
+		<key>StartCalendarInterval</key>
+		<dict>
+			<key>Weekday</key>
+			<integer>1</integer>
+			<key>Hour</key>
+			<integer>10</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
 
-Turn it on with:
+		<key>StandardOutPath</key>
+		<string>/tmp/com.bbkane.grabbit.stdout.log</string>
+		<key>StandardErrorPath</key>
+		<string>/tmp/com.bbkane.grabbit.stderr.log</string>
+	</dict>
+</plist>
+```
+
+Load and enable it:
 
 ```
+launchctl unload ~/Library/LaunchAgents/com.bbkane.grabbit.plist
 launchctl load -w ~/Library/LaunchAgents/com.bbkane.grabbit.plist
+launchctl list | grep com.bbkane.grabbit
 ```
+
+This runs at login and every Monday at 10:00.
 
 See the following links to read up on `launchd` or generate `plist` files:
 
@@ -29,14 +64,9 @@ See the following links to read up on `launchd` or generate `plist` files:
 - https://github.com/zerowidth/launched
 - https://www.peterborgapps.com/lingon/ (the app costs $15)
 
-This runs when started and every Monday at 10AM
-
 ## Linux with systemd
 
-See the following links to read up on `systemd` or generate timers
-
-- https://techoverflow.net/2019/04/22/simple-systemd-timer-generator/
-- https://wiki.archlinux.org/index.php/Systemd/Timers
+See https://github.com/bbkane/dotfiles/tree/master/grabbit-systemd
 
 ## Mac or Linux with crond
 
