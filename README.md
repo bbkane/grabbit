@@ -4,9 +4,14 @@ A small single-binary CLI to grab images from Reddit - I've been surprised how m
 
 ## @bbkane's Setup
 
-See my [personal config](https://github.com/bbkane/dotfiles/blob/master/grabbit/dot-config/grabbit.yaml).
+See my [personal config](https://github.com/bbkane/dotfiles/blob/master/grabbit/dot-config/grabbit.yaml):
 
 ![My Setup](./reddit_wallpapers.jpg)
+
+I run grabbit on a weekly schedule automatically. Here's how I do that:
+
+- [Mac](https://github.com/bbkane/dotfiles/tree/master/grabbit-launchctl)
+- [Linux](https://github.com/bbkane/dotfiles/tree/master/grabbit-systemd)
 
 ## Project Status (2025-06-14)
 
@@ -61,7 +66,6 @@ xfconf-query -c xfce4-desktop -l \
 
 ## Docs
 
-- Run grabbit on a schedule: [./schedule_it.md](./schedule_it.md)
 - Hack on grabbit: [./dev_notes.md](./dev_notes.md)
 - See [Go Project Notes](https://www.bbkane.com/blog/go-project-notes/) for notes on development tooling.
 - [MIT Licensed](./LICENSE)
