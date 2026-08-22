@@ -1,3 +1,6 @@
+> [!WARNING]
+> 2026-08-22: This app currently breaks as Reddit has locked down their API. I've applied for an API key (hopefully they'll grant me access), but you'll probably have to apply for your own to use Grabbit.
+
 # Grabbit
 
 A small single-binary CLI to grab images from Reddit - I've been surprised how much I enjoy seeing beautiful wallpapers when I lock/unlock my computer. grabbit automatically skips images tagged NSFW, designed to be easy to install/uninstall and is [MIT licensed](./LICENSE).

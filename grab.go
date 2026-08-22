@@ -275,25 +275,11 @@ func grabSubreddit(logger *logos.Logger, subreddit subreddit, posts []*reddit.Po
 
 func testRedditConnection(logger *logos.Logger) error {
 	// Test connection
+	var dialer net.Dialer
+	dialer.Timeout = time.Second * 30
+
 	conn, err := tls.DialWithDialer(
-		&net.Dialer{
-			Cancel:         nil,
-			Control:        nil,
-			ControlContext: nil,
-			Deadline:       time.Time{},
-			DualStack:      false,
-			FallbackDelay:  0,
-			KeepAlive:      0,
-			KeepAliveConfig: net.KeepAliveConfig{
-				Enable:   false,
-				Idle:     0,
-				Interval: 0,
-				Count:    0,
-			},
-			LocalAddr: nil,
-			Resolver:  nil,
-			Timeout:   time.Second * 30,
-		},
+		&dialer,
 		"tcp",
 		net.JoinHostPort("reddit.com", "443"),
 		nil,
